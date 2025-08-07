@@ -17,68 +17,46 @@ def carga(path):
     energia = []  # Lista para guardar energías
     conteo = []  # Lista para guardar conteos
 
-    with open(path, 'r', encoding='latin1') as file:
+    with open(path, 'r', encoding='latin1') as file: ### No dejaba con utf-8(el estandar) Chat GPT nos recomendo usar encoding='latin1"
         for linea in file:
             linea = linea.strip()
             if linea == '' or linea.startswith('#'):
                 continue
             parts = linea.split()
             if len(parts) >= 2:
-                try:
                     e = float(parts[0])     # energía
                     c = float(parts[1])     # conteo
                     energia.append(e)        # guardamos energía
                     conteo.append(c)        # guardamos conteo
-                except:
-                    continue
     return np.array(energia), np.array(conteo)
 
-# Lista Archivos
-archivos = {
-    "W": [
-        "Taller 1/W_unfiltered_10kV-50kV/W_10kV.dat",
-        "Taller 1/W_unfiltered_10kV-50kV/W_20kV.dat",
-        "Taller 1/W_unfiltered_10kV-50kV/W_30kV.dat",
-        "Taller 1/W_unfiltered_10kV-50kV/W_40kV.dat",
-        "Taller 1/W_unfiltered_10kV-50kV/W_50kV.dat"
-    ],
-    "Rh": [
-        "Taller 1/Rh_unfiltered_10kV-50kV/Rh_10kV.dat",
-        "Taller 1/Rh_unfiltered_10kV-50kV/Rh_20kV.dat",
-        "Taller 1/Rh_unfiltered_10kV-50kV/Rh_30kV.dat",
-        "Taller 1/Rh_unfiltered_10kV-50kV/Rh_40kV.dat",
-        "Taller 1/Rh_unfiltered_10kV-50kV/Rh_50kV.dat"
-    ],
-    "Mo": [
-        "Taller 1/Mo_unfiltered_10kV-50kV/Mo_10kV.dat",
-        "Taller 1/Mo_unfiltered_10kV-50kV/Mo_20kV.dat",
-        "Taller 1/Mo_unfiltered_10kV-50kV/Mo_30kV.dat",
-        "Taller 1/Mo_unfiltered_10kV-50kV/Mo_40kV.dat",
-        "Taller 1/Mo_unfiltered_10kV-50kV/Mo_50kV.dat"
-    ]
-}
-# Crear gráfico
-fig, axes = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+materiales_anodo = ["W","Rh","Mo"]
+fig, axes= plt.subplots(3, 1, figsize=(8, 12)) #grafica de 3 filas 1 columna
+figura=0 #numero de fila
+for material in materiales_anodo:
+    for voltaje in range(10,60,10):
+        path="Taller 1/"+material+"_unfiltered_10kV-50kV/"+material+"_"+str(voltaje)+"kV.dat" ###Crea el path
+        if not os.path.exists(path): 
+          print("Archivo no encontrado "+path)  
+          continue
+        energia, conteo = carga(path)
+        axes[figura].plot(energia,conteo, label=str(voltaje)+"kV")
+        axes[figura].legend(title="Voltaje del tubo",loc='upper right')
+    axes[figura].set_ylabel("Conteo de fotones")
+    axes[figura].text(1.03, 0.5,"Anodo de "+material, rotation=-90,
+        fontsize=12, va='center', ha='center',
+        transform=axes[figura].transAxes)
+    axes[figura].grid(True, which='both', linestyle=':', linewidth=0.5)
+    
+    axes[figura].set_xlabel("Energía (keV)")
+    axes[figura].set_xlim(0, 30)
+    figura+=1
 
-for ax, (element, file_list) in zip(axes, archivos.items()):
-    for file in file_list:
-        if not os.path.exists(file):
-            print(f"Archivo no encontrado: {file}")
-            continue
-        kv = file.split("_")[-1].replace("kV.dat", "") + " kV"
-        energia, conteo = carga(file)
-        if energia is not None:
-            ax.plot(energia, conteo, label=kv)
-    ax.set_yscale('log')
-    ax.set_ylabel("Conteo de fotones")
-    ax.set_title(f"Anodo de {element}")
-    ax.legend(title="Voltaje del tubo")
-    ax.grid(True, which='both', linestyle=':', linewidth=0.5)
-
-axes[-1].set_xlabel("Energía (keV)")
 plt.tight_layout()
 plt.savefig("Taller 1/1.pdf", bbox_inches="tight", pad_inches=0.1)
 print("Gráfico guardado como 1.pdf")
+# Crear gráfico
+
 '''
 2. Comportamiento del continuo (Bremsstrahlung) 
 2.a. Remover los picos
