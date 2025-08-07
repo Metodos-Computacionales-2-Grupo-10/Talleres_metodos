@@ -93,9 +93,9 @@ Guarde esta gráfica como  2.a.pdf
 '''
 
 archivos = {
-    "Tungsteno (W)": "Taller 1/W_unfiltered_10kV-50kV/W_30kV.dat",
-    "Rodio (Rh)": "Taller 1/Rh_unfiltered_10kV-50kV/Rh_30kV.dat",
-    "Molibdeno (Mo)": "Taller 1/Mo_unfiltered_10kV-50kV/Mo_30kV.dat"
+    "Tungsteno (W)": "Taller 1/W_unfiltered_10kV-50kV/W_40kV.dat",
+    "Rodio (Rh)": "Taller 1/Rh_unfiltered_10kV-50kV/Rh_40kV.dat",
+    "Molibdeno (Mo)": "Taller 1/Mo_unfiltered_10kV-50kV/Mo_40kV.dat"
 }
 
 # Parámetros
@@ -135,6 +135,7 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
     ax.plot(energia, conteo_corregido, label='Corregido')
     ax.scatter(energia[picos], conteo[picos], color='black', s=10, label='Picos')
     ax.set_title(nombre)
+    ax.set_yscale('log')
     ax.set_ylabel("Cuentas")
     ax.legend()
 
