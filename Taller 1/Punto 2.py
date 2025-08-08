@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import os
 from scipy.signal import find_peaks
 from scipy import interpolate
-
+import scipy.optimize as opt 
 def carga(path):
     energia = []  # Lista para guardar energías
     conteo = []  # Lista para guardar conteos
@@ -68,19 +68,82 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
             energia_filtrada.append(energia[i])
             conteo_filtrado.append(conteo[i])
 
-    # 4. Interpolación lineal
-    interpolador = interpolate.interp1d(energia_filtrada, conteo_filtrado, kind='linear', fill_value="extrapolate")
-    conteo_corregido = interpolador(energia)
-
-    # 5. Graficar
-    ax.plot(energia, conteo_original, color='red', alpha=0.4, label='Original')
-    ax.plot(energia, conteo_corregido, label='Corregido')
+    # 4. Graficar
+    ax.scatter(energia, conteo_original, color='red', alpha=0.4, label='Original')
     ax.scatter(energia[picos], conteo[picos], color='black', s=10, label='Picos')
     ax.set_title(nombre)
-    ax.set_ylabel("Cuentas")
+    ax.set_ylabel("Conteo de Fotones")
     ax.legend()
 
 axes[-1].set_xlabel("Energía (keV)")
 plt.tight_layout()
 plt.savefig("Taller 1/2a.pdf", bbox_inches="tight", pad_inches=0.1)
 print("Gráfico guardado como 2.a.pdf")
+'''
+Con  los  picos  removidos,  aproxime  la  “barriga”  de  los  espectros  como  mejor  se  le  ocurra;
+puede usar interpolación, ajustes a alguna función que se le ocurra, o cualquier método de su
+preferencia.
+Como antes, grafique un par de espectros y muestre cómo se ajusta su aproximación continua
+de la barriga, guarde como  2.b.pdf
+'''
+def gaussiana(x,media,desviacion,amplitud):
+    return amplitud*np.exp((-(x - media)**2) / (2 * desviacion**2)) / (desviacion * np.sqrt(2 * np.pi))
+fig, axes = plt.subplots(3, 1, figsize=(8, 10))
+figura=0
+
+for ax, (nombre, archivo) in zip(axes, archivos.items()):
+    energia, conteo = carga(archivo)
+    conteo_original = conteo.copy()
+    # 1. Detectar picos
+    altura_minima = prominence * np.max(conteo)
+    picos, _ = find_peaks(conteo, prominence=altura_minima)
+
+    # 2. Obtener índices a eliminar (alrededor de cada pico)
+    indices_a_eliminar = set()
+    for pico in picos:
+        for i in range(pico - radio, pico + radio):
+            indices_a_eliminar.add(i)
+
+    # 3. Crear nuevos arrays solo con datos válidos 
+    energia_filtrada = []
+    conteo_filtrado = []
+    for i in range(len(conteo)):
+        if i not in indices_a_eliminar:
+            energia_filtrada.append(energia[i])
+            conteo_filtrado.append(conteo[i])
+            
+    # 4. Interpolación lineal
+    interpolador = interpolate.interp1d(energia_filtrada, conteo_filtrado, kind='linear', fill_value="extrapolate")
+    conteo_corregido = interpolador(energia)
+    #4.1 Gaussian Fit
+    params,cov =opt.curve_fit(gaussiana,energia,conteo_corregido)
+    media=params[0]
+    desviacion=params[1]
+    amplitud=params[2]
+    # 5. Graficar
+    ax.scatter(energia, conteo_original, color='red', alpha=0.4, label='Original')
+    ax.scatter(energia, conteo_corregido, label='Interpolacion')
+    ax.scatter(energia,gaussiana(energia,media,desviacion,amplitud),label="Gaussiana Fit")
+    ax.scatter(energia[picos], conteo[picos], color='black', s=10, label='Picos')
+    ax.text(1.03, 0.5,"Anodo de "+nombre, rotation=-90,
+        fontsize=12, va='center', ha='right',
+        transform=ax.transAxes)
+    ax.set_ylabel("Conteo de Fotones")
+    ax.set_xlabel("Energía (keV)")
+    ax.legend()
+
+
+plt.savefig("Taller 1/2b.pdf", bbox_inches="tight", pad_inches=0.1)
+print("Gráfico guardado como 2.b.pdf")
+'''
+2.c. Analizar el continuo
+Con su aproximación, calcule:
+• El máximo del continuo (no debe ser un valor del eje 𝑦 exactamente)
+• La energía donde ocurre el máximo (no debe ser un número entero)
+• El ancho a media altura del continuo, FWHM (no debe ser un número entero)
+Grafique estas tres variables como función del voltaje del tubo, y también grafique el máximo
+con respecto la energía del máximo. Esto son 4 subplots, donde en cada uno deben estar las
+tres gráficas de los tres elementos, con leyenda.
+Guarde esta gráfica como  2.c.pdf
+'''
+
