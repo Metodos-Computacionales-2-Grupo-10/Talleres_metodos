@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+import pandas as pd
 import os
 from scipy.signal import find_peaks
 from scipy import interpolate
@@ -71,6 +72,7 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
     # 4. Graficar
     ax.scatter(energia, conteo_original, color='red', alpha=0.4, label='Original')
     ax.scatter(energia[picos], conteo[picos], color='black', s=10, label='Picos')
+    ax.scatter(energia_filtrada,conteo_filtrado,label="Sin Picos")
     ax.set_title(nombre)
     ax.set_ylabel("Conteo de Fotones")
     ax.legend()
@@ -146,4 +148,69 @@ con respecto la energía del máximo. Esto son 4 subplots, donde en cada uno deb
 tres gráficas de los tres elementos, con leyenda.
 Guarde esta gráfica como  2.c.pdf
 '''
+### SE USARA LA INTERPOLACION, NO LA GAUSSIANA QUE HIZO UN PEOR FIT###
+###No se porque no cargamos los datos asi desde un inicio, la complejidad del algoritmo esta muuuuy grande
+def carga(path):
+    energia = []  # Lista para guardar energías
+    conteo = []  # Lista para guardar conteos
 
+    with open(path, 'r', encoding='latin1') as file: ### No dejaba con utf-8(el estandar) Chat GPT nos recomendo usar encoding='latin1"
+        for linea in file:
+            linea = linea.strip()
+            if linea == '' or linea.startswith('#'):
+                continue
+            parts = linea.split()
+            if len(parts) >= 2:
+                    e = float(parts[0])     # energía
+                    c = float(parts[1])     # conteo
+                    energia.append(e)        # guardamos energía
+                    conteo.append(c)        # guardamos conteo
+    return np.array(energia), np.array(conteo)
+datos={}
+materiales_anodo = ["W","Rh","Mo"] #lista materiales
+fig, axes= plt.subplots(3, 1, figsize=(8, 12)) #grafica de 3 filas 1 columna
+figura=0 #numero de fila
+for material in materiales_anodo:
+    medidas={}
+    for voltaje in range(10,51,1): #rango de 10-50Kv con saltos de 10
+        path="Taller 1/"+material+"_unfiltered_10kV-50kV/"+material+"_"+str(voltaje)+"kV.dat" ###Crea el path
+        if not os.path.exists(path): 
+          print("Archivo no encontrado "+path)  
+          continue
+        energia, conteo = carga(path)
+        conteo_original = conteo.copy()
+        # 1. Detectar picos
+        altura_minima = prominence * np.max(conteo)
+        picos, _ = find_peaks(conteo, prominence=altura_minima)
+
+        # 2. Obtener índices a eliminar (alrededor de cada pico)
+        indices_a_eliminar = set()
+        for pico in picos:
+            for i in range(pico - radio, pico + radio):
+                indices_a_eliminar.add(i)
+
+        # 3. Crear nuevos arrays solo con datos válidos 
+        energia_filtrada = []
+        conteo_filtrado = []
+        for i in range(len(conteo)):
+            if i not in indices_a_eliminar:
+                energia_filtrada.append(energia[i])
+                conteo_filtrado.append(conteo[i])
+                
+        interpolador = interpolate.interp1d(energia_filtrada, conteo_filtrado, kind='linear', fill_value="extrapolate")
+        conteo_corregido = interpolador(energia) #carga datos de archivo
+        medidas[str(voltaje)]=pd.DataFrame({"energia": energia,"conteo": conteo_corregido})
+    datos[material]=medidas
+#Se guardan todos los datos en Df "datos" con llave el elemento y valor otro dict de llave voltaje y valor un df de los datos.
+
+valores_grafica3={}
+voltajes=list(range(10,51,1))
+#Ahora, para hallar los maximos del continuo(valor de x)
+for material in materiales_anodo:
+
+    valores_grafica3['maximos']=None
+    valores_grafica3['Emax']=None
+    valores_grafica3['FWHM']=None
+#Ahora energia del maximo
+
+#Ahora FWHM
