@@ -123,10 +123,10 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
     desviacion=params[1]
     amplitud=params[2]
     # 5. Graficar
-    ax.scatter(energia, conteo_original, color='red', alpha=0.4, label='Original')
-    ax.scatter(energia, conteo_corregido, label='Interpolacion')
-    ax.scatter(energia,gaussiana(energia,media,desviacion,amplitud),label="Gaussiana Fit")
-    ax.scatter(energia[picos], conteo[picos], color='black', s=10, label='Picos')
+    ax.plot(energia, conteo_original, color='red', alpha=0.4, label='Original')
+    ax.plot(energia, conteo_corregido, label='Interpolacion')
+    ax.plot(energia,gaussiana(energia,media,desviacion,amplitud),label="Gaussiana Fit")
+    ax.plot(energia[picos], conteo[picos], color='black', s=10, label='Picos')
     ax.text(1.03, 0.5,"Anodo de "+nombre, rotation=-90,
         fontsize=12, va='center', ha='right',
         transform=ax.transAxes)
@@ -150,29 +150,13 @@ Guarde esta gráfica como  2.c.pdf
 '''
 ### SE USARA LA INTERPOLACION, NO LA GAUSSIANA QUE HIZO UN PEOR FIT###
 ###No se porque no cargamos los datos asi desde un inicio, la complejidad del algoritmo esta muuuuy grande
-def carga(path):
-    energia = []  # Lista para guardar energías
-    conteo = []  # Lista para guardar conteos
-
-    with open(path, 'r', encoding='latin1') as file: ### No dejaba con utf-8(el estandar) Chat GPT nos recomendo usar encoding='latin1"
-        for linea in file:
-            linea = linea.strip()
-            if linea == '' or linea.startswith('#'):
-                continue
-            parts = linea.split()
-            if len(parts) >= 2:
-                    e = float(parts[0])     # energía
-                    c = float(parts[1])     # conteo
-                    energia.append(e)        # guardamos energía
-                    conteo.append(c)        # guardamos conteo
-    return np.array(energia), np.array(conteo)
 datos={}
 materiales_anodo = ["W","Rh","Mo"] #lista materiales
 fig, axes= plt.subplots(3, 1, figsize=(8, 12)) #grafica de 3 filas 1 columna
 figura=0 #numero de fila
 for material in materiales_anodo:
     medidas={}
-    for voltaje in range(10,51,1): #rango de 10-50Kv con saltos de 10
+    for voltaje in range(10,51,1): #rango de 10-50Kv con saltos de 1
         path="Taller 1/"+material+"_unfiltered_10kV-50kV/"+material+"_"+str(voltaje)+"kV.dat" ###Crea el path
         if not os.path.exists(path): 
           print("Archivo no encontrado "+path)  
