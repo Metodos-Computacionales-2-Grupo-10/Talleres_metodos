@@ -202,7 +202,7 @@ for material in materiales_anodo:
         medidas[str(voltaje)]=pd.DataFrame({"energia": energia,"conteo": conteo_corregido})
     datos[material]=medidas
 #Se guardan todos los datos en Df "datos" con llave el elemento y valor otro dict de llave voltaje y valor un df de los datos.
-
+#ejemplo print(datos['material']['voltaje'])
 valores_grafica3={}
 voltajes=list(range(10,51,1))
 #Ahora, para hallar los maximos del continuo(valor de x)
