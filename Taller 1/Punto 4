@@ -88,5 +88,5 @@ plt.title("Porcentaje de área de picos vs continuo")
 plt.grid(True, linestyle=":")
 plt.legend()
 plt.tight_layout()
-plt.savefig("Taller 4.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("4.pdf", bbox_inches="tight", pad_inches=0.1)
 
