@@ -43,7 +43,7 @@ archivos = {
 }
 
 # Parámetros
-prominence = 0.05
+prominence = 0.05  # para detectar picos (que tal alto debe ser un pico para ser considerado)
 radio = 3  # cuántos puntos a cada lado del pico eliminamos
 
 fig, axes = plt.subplots(3, 1, figsize=(8, 10))
@@ -81,8 +81,8 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
     ax.set_xlabel("Energía (keV)")
     ax.legend()
 plt.tight_layout()
-plt.savefig("Taller 1/2a.pdf", bbox_inches="tight", pad_inches=0.1)
-print("Gráfico guardado como 2.a.pdf")
+plt.savefig("2a.pdf", bbox_inches="tight", pad_inches=0.1)
+
 '''
 Con  los  picos  removidos,  aproxime  la  “barriga”  de  los  espectros  como  mejor  se  le  ocurra;
 puede usar interpolación, ajustes a alguna función que se le ocurra, o cualquier método de su
@@ -91,9 +91,8 @@ Como antes, grafique un par de espectros y muestre cómo se ajusta su aproximaci
 de la barriga, guarde como  2.b.pdf
 '''
 
-### Usamos dos metodos, el primero con interpolacion y el segundo con una gaussiana
-def gaussiana(x,media,desviacion,amplitud):
-    return amplitud*np.exp((-(x - media)**2) / (2 * desviacion**2)) / (desviacion * np.sqrt(2 * np.pi))
+### Usamos interpolacion 
+
 fig, axes = plt.subplots(3, 1, figsize=(8, 10))
 figura=0
 
@@ -117,19 +116,13 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
         if i not in indices_a_eliminar:
             energia_filtrada.append(energia[i])
             conteo_filtrado.append(conteo[i])
-    '''HASTA AQUI ES LO MISMO DEL PUNTO ANTERIOR. AHORA INTERPOLA Y SE HACE EL FIT GAUSSIANO'''
+    '''HASTA AQUI ES LO MISMO DEL PUNTO ANTERIOR. AHORA INTERPOLA '''
     # 4. Interpolación lineal
     interpolador = interpolate.interp1d(energia_filtrada, conteo_filtrado, kind='linear', fill_value="extrapolate")
     conteo_corregido = interpolador(energia)
-    #4.1 Gaussian Fit
-    params,cov =opt.curve_fit(gaussiana,energia,conteo_corregido)
-    media=params[0]
-    desviacion=params[1]
-    amplitud=params[2]
     # 5. Graficar
     ax.plot(energia, conteo_original, color='red', alpha=0.4, label='Original')
     ax.plot(energia, conteo_corregido, label='Interpolacion')
-    ax.plot(energia,gaussiana(energia,media,desviacion,amplitud),label="Gaussiana Fit")
     ax.scatter(energia[picos], conteo[picos], color='black',s=10, label='Picos')
     ax.text(1.03, 0.5,"Anodo de "+nombre, rotation=-90,
         fontsize=12, va='center', ha='right',
@@ -139,8 +132,8 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
     ax.legend()
 
 
-plt.savefig("Taller 1/2b.pdf", bbox_inches="tight", pad_inches=0.1)
-print("Gráfico guardado como 2.b.pdf")
+plt.savefig("2b.pdf", bbox_inches="tight", pad_inches=0.1)
+
 '''
 2.c. Analizar el continuo
 Con su aproximación, calcule:
@@ -249,5 +242,4 @@ axes[3].set_ylabel('Maximo de Conteos')
 axes[3].legend()
 
 plt.tight_layout()
-plt.savefig("Taller 1/2c.pdf", bbox_inches="tight", pad_inches=0.1)
-print("Gráfico guardado como 2.c.pdf")
+plt.savefig("2c.pdf", bbox_inches="tight", pad_inches=0.1)

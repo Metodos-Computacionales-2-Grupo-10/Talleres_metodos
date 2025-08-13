@@ -53,5 +53,5 @@ for material in materiales_anodo:
     figura+=1
 
 plt.tight_layout()
-plt.savefig("Taller 1/1.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("1.pdf", bbox_inches="tight", pad_inches=0.1)
 print("Gráfico guardado como 1.pdf")
