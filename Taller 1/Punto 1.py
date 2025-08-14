@@ -34,7 +34,7 @@ materiales_anodo = ["W","Rh","Mo"] #lista materiales
 fig, axes= plt.subplots(3, 1, figsize=(8, 12)) #grafica de 3 filas 1 columna
 figura=0 #numero de fila
 for material in materiales_anodo:
-    for voltaje in range(10,60,10): #rango de 10-50Kv con saltos de 10
+    for voltaje in range(10,51,10): #rango de 10-50Kv con saltos de 10
         path="Taller 1/"+material+"_unfiltered_10kV-50kV/"+material+"_"+str(voltaje)+"kV.dat" ###Crea el path
         if not os.path.exists(path): 
           print("Archivo no encontrado "+path)  
