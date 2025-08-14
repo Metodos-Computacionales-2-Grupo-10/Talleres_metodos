@@ -240,6 +240,6 @@ axes[1].set_title("FWHM del pico mayor vs kV")
 axes[1].legend()
 
 plt.tight_layout()
-plt.savefig("3b.pdf" bbox_inches="tight", pad_inches=0.1)
+plt.savefig("3b.pdf", bbox_inches="tight", pad_inches=0.1)
 plt.show()
 plt.close()
