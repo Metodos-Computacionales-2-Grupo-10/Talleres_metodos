@@ -82,9 +82,14 @@ def continuo_interpolado(energia, conteo, prominence, radio):
     return interpolador(energia)
 
 
+def gaussiana(x, media, desviacion, amplitud):
+    return amplitud*np.exp((-(x - media)*2) / (2 * desviacion*2)) / (desviacion * np.sqrt(2 * np.pi))
+
+def fwhm_from_sigma(sigma):
+    return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
 
 
-
+salida_3a = os.path.join("Taller 1", "3a.pdf")
 fig, axes = plt.subplots(1, 3, figsize=(15, 4), sharey=False)
 titulos = {"Mo": "Molibdeno (Mo)", "Rh": "Rodio (Rh)", "W": "Tungsteno (W)"}
 orden_materiales = ["Mo", "Rh", "W"]  # orden visual
@@ -129,14 +134,12 @@ for ax, mat in zip(axes, orden_materiales):
     ax.set_xlabel("Energía (keV)")
     ax.set_ylabel("Intensidad (picos)")
     ax.legend(ncol=2, fontsize=8)
-    ax.set_xlim(13,40)
+    ax.set_xlim(8,50)
 
 plt.tight_layout()
 plt.savefig("3a.pdf", bbox_inches="tight", pad_inches=0.1)
-plt.xlim(1,40) #Estos limites son solo para las graficas del Tungsteno
-plt.show()
+plt.xlim(1,50) #Estos limites son solo para las graficas del Tungsteno
 plt.close()
-
 #Al restar, el continuo desaparece, idealmente, y quedan solo los picos, por eso las curvas resultantes muestran agudos alrededor de las energías    
 """
 de los picos. Guardar en  3.a.pdf
@@ -150,12 +153,6 @@ Grafique la altura del pico y el ancho a media altura en función del voltaje de
 subplots con los resultados para todos los elementos. Guarde en  3.b.pdf
 (Puede omitir algunos de los espectros iniciales que no presentan picos)"""
 
-def gaussiana(x, media, desviacion, amplitud):
-    return amplitud*np.exp((-(x - media)*2) / (2 * desviacion*2)) / (desviacion * np.sqrt(2 * np.pi))
-
-def fwhm_from_sigma(sigma):
-    return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
-
 
 def ajustar_pico_mayor(x, y_peaks):
     #Busca el pico más alto en y_peaks y ajusta una gaussiana local retorna (altura_ajustada, media, fwhm).
@@ -164,24 +161,24 @@ def ajustar_pico_mayor(x, y_peaks):
 
     # detectar picos en y_peaks para ubicar el principal
     rng = y_peaks.max() - y_peaks.min()
-    prom = max(0.05 * rng)
+    prom = max(0.05 * rng, 1e-12)
     pk, _ = find_peaks(y_peaks, prominence=prom)
     if len(pk) == 0:
         return None
     p_main = pk[np.argmax(y_peaks[pk])]
 
     # Ventana local alrededor del pico
-    w = max(10, int(0.01 * len(x))) #ancho de la ventana 
-    li = max(p_main - w, 0) #indice izquierdo, asegurando que no sea negativo
-    ri = min(p_main + w, len(x) - 1) #indice derecho, asegurando que no sea negativo
+    w = max(10, int(0.01 * len(x)))
+    li = max(p_main - w, 0)
+    ri = min(p_main + w, len(x) - 1)
 
     x_win = x[li:ri+1]
     y_win = y_peaks[li:ri+1]
 
     # Iniciales para el ajuste
-    media0 = x[p_main] #posicion inicial del pico
-    dx = np.median(np.diff(x_win)) if len(x_win) > 1 else 1.0 #diferenciacion 
-    desviacion0 = max(3*dx, dx) #ancho inicial estimado
+    media0 = x[p_main]
+    dx = np.median(np.diff(x_win)) if len(x_win) > 1 else 1.0
+    desviacion0 = max(3*dx, dx)
     amplitud0 = max(y_win.max(), 1e-6)  # amplitud del PDF gaussiano
 
     p0 = [media0, desviacion0, amplitud0]
@@ -241,5 +238,4 @@ axes[1].legend()
 
 plt.tight_layout()
 plt.savefig("3b.pdf", bbox_inches="tight", pad_inches=0.1)
-plt.show()
 plt.close()
