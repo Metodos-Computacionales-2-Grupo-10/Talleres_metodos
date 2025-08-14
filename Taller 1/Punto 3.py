@@ -82,14 +82,8 @@ def continuo_interpolado(energia, conteo, prominence, radio):
     return interpolador(energia)
 
 
-def gaussiana(x, media, desviacion, amplitud):
-    return amplitud*np.exp((-(x - media)*2) / (2 * desviacion*2)) / (desviacion * np.sqrt(2 * np.pi))
-
-def fwhm_from_sigma(sigma):
-    return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
 
 
-salida_3a = os.path.join("Taller 1", "3a.pdf")
 fig, axes = plt.subplots(1, 3, figsize=(15, 4), sharey=False)
 titulos = {"Mo": "Molibdeno (Mo)", "Rh": "Rodio (Rh)", "W": "Tungsteno (W)"}
 orden_materiales = ["Mo", "Rh", "W"]  # orden visual
@@ -153,11 +147,15 @@ Grafique la altura del pico y el ancho a media altura en función del voltaje de
 subplots con los resultados para todos los elementos. Guarde en  3.b.pdf
 (Puede omitir algunos de los espectros iniciales que no presentan picos)"""
 
+def gaussiana(x, media, desviacion, amplitud):
+    return amplitud*np.exp((-(x - media)*2) / (2 * desviacion*2)) / (desviacion * np.sqrt(2 * np.pi))
+
+def fwhm_from_sigma(sigma):
+    return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
 
 def ajustar_pico_mayor(x, y_peaks):
     #Busca el pico más alto en y_peaks y ajusta una gaussiana local retorna (altura_ajustada, media, fwhm).
-    if len(x) < 5:
-        return None
+
 
     # detectar picos en y_peaks para ubicar el principal
     rng = y_peaks.max() - y_peaks.min()
@@ -179,7 +177,7 @@ def ajustar_pico_mayor(x, y_peaks):
     media0 = x[p_main]
     dx = np.median(np.diff(x_win)) if len(x_win) > 1 else 1.0
     desviacion0 = max(3*dx, dx)
-    amplitud0 = max(y_win.max(), 1e-6)  # amplitud del PDF gaussiano
+    amplitud0 = max(y_win.max(), 1e-6)  # amplitud del gaussiano
 
     p0 = [media0, desviacion0, amplitud0]
 
