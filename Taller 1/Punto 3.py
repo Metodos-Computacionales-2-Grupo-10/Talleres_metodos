@@ -82,11 +82,7 @@ def continuo_interpolado(energia, conteo, prominence, radio):
     return interpolador(energia)
 
 
-def gaussiana(x, media, desviacion, amplitud):
-    return amplitud*np.exp((-(x - media)*2) / (2 * desviacion*2)) / (desviacion * np.sqrt(2 * np.pi))
 
-def fwhm_from_sigma(sigma):
-    return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
 
 
 salida_3a = os.path.join("Taller 1", "3a.pdf")
@@ -155,6 +151,11 @@ Grafique la altura del pico y el ancho a media altura en función del voltaje de
 subplots con los resultados para todos los elementos. Guarde en  3.b.pdf
 (Puede omitir algunos de los espectros iniciales que no presentan picos)"""
 
+def gaussiana(x, media, desviacion, amplitud):
+    return amplitud*np.exp((-(x - media)*2) / (2 * desviacion*2)) / (desviacion * np.sqrt(2 * np.pi))
+
+def fwhm_from_sigma(sigma):
+    return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
 salida_3b = os.path.join("Taller 1", "3b.pdf")
 
 def ajustar_pico_mayor(x, y_peaks):
