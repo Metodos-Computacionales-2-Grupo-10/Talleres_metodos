@@ -85,7 +85,6 @@ def continuo_interpolado(energia, conteo, prominence, radio):
 
 
 
-salida_3a = os.path.join("Taller 1", "3a.pdf")
 fig, axes = plt.subplots(1, 3, figsize=(15, 4), sharey=False)
 titulos = {"Mo": "Molibdeno (Mo)", "Rh": "Rodio (Rh)", "W": "Tungsteno (W)"}
 orden_materiales = ["Mo", "Rh", "W"]  # orden visual
@@ -133,11 +132,11 @@ for ax, mat in zip(axes, orden_materiales):
     ax.set_xlim(13,40)
 
 plt.tight_layout()
-plt.savefig(salida_3a, bbox_inches="tight", pad_inches=0.1)
+plt.savefig("3a.pdf", bbox_inches="tight", pad_inches=0.1)
 plt.xlim(1,40) #Estos limites son solo para las graficas del Tungsteno
 plt.show()
 plt.close()
-print("3.a) Guardado:", salida_3a)
+
 #Al restar, el continuo desaparece, idealmente, y quedan solo los picos, por eso las curvas resultantes muestran agudos alrededor de las energías    
 """
 de los picos. Guardar en  3.a.pdf
@@ -156,7 +155,7 @@ def gaussiana(x, media, desviacion, amplitud):
 
 def fwhm_from_sigma(sigma):
     return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
-salida_3b = os.path.join("Taller 1", "3b.pdf")
+
 
 def ajustar_pico_mayor(x, y_peaks):
     #Busca el pico más alto en y_peaks y ajusta una gaussiana local retorna (altura_ajustada, media, fwhm).
@@ -241,7 +240,6 @@ axes[1].set_title("FWHM del pico mayor vs kV")
 axes[1].legend()
 
 plt.tight_layout()
-plt.savefig(salida_3b, bbox_inches="tight", pad_inches=0.1)
+plt.savefig("3b.pdf" bbox_inches="tight", pad_inches=0.1)
 plt.show()
 plt.close()
-print("3.b) Guardado:", salida_3b)
