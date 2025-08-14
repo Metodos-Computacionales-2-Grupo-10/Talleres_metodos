@@ -165,24 +165,24 @@ def ajustar_pico_mayor(x, y_peaks):
 
     # detectar picos en y_peaks para ubicar el principal
     rng = y_peaks.max() - y_peaks.min()
-    prom = max(0.05 * rng, 1e-12)
+    prom = max(0.05 * rng)
     pk, _ = find_peaks(y_peaks, prominence=prom)
     if len(pk) == 0:
         return None
     p_main = pk[np.argmax(y_peaks[pk])]
 
     # Ventana local alrededor del pico
-    w = max(10, int(0.01 * len(x)))
-    li = max(p_main - w, 0)
-    ri = min(p_main + w, len(x) - 1)
+    w = max(10, int(0.01 * len(x))) #ancho de la ventana 
+    li = max(p_main - w, 0) #indice izquierdo, asegurando que no sea negativo
+    ri = min(p_main + w, len(x) - 1) #indice derecho, asegurando que no sea negativo
 
     x_win = x[li:ri+1]
     y_win = y_peaks[li:ri+1]
 
     # Iniciales para el ajuste
-    media0 = x[p_main]
-    dx = np.median(np.diff(x_win)) if len(x_win) > 1 else 1.0
-    desviacion0 = max(3*dx, dx)
+    media0 = x[p_main] #posicion inicial del pico
+    dx = np.median(np.diff(x_win)) if len(x_win) > 1 else 1.0 #diferenciacion 
+    desviacion0 = max(3*dx, dx) #ancho inicial estimado
     amplitud0 = max(y_win.max(), 1e-6)  # amplitud del PDF gaussiano
 
     p0 = [media0, desviacion0, amplitud0]
