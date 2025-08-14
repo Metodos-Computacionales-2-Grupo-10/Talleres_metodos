@@ -137,7 +137,7 @@ for ax, mat in zip(axes, orden_materiales):
     ax.set_xlim(8,50)
 
 plt.tight_layout()
-plt.savefig("3a.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("Taller 1/3a.pdf", bbox_inches="tight", pad_inches=0.1)
 plt.xlim(1,50) #Estos limites son solo para las graficas del Tungsteno
 plt.close()
 #Al restar, el continuo desaparece, idealmente, y quedan solo los picos, por eso las curvas resultantes muestran agudos alrededor de las energías    
@@ -237,5 +237,5 @@ axes[1].set_title("FWHM del pico mayor vs kV")
 axes[1].legend()
 
 plt.tight_layout()
-plt.savefig("3b.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("Taller 1/3b.pdf", bbox_inches="tight", pad_inches=0.1)
 plt.close()

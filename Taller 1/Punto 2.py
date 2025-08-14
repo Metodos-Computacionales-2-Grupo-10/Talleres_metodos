@@ -81,7 +81,7 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
     ax.set_xlabel("Energía (keV)")
     ax.legend()
 plt.tight_layout()
-plt.savefig("2a.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("Taller 1/2a.pdf", bbox_inches="tight", pad_inches=0.1)
 
 '''
 Con  los  picos  removidos,  aproxime  la  “barriga”  de  los  espectros  como  mejor  se  le  ocurra;
@@ -132,7 +132,7 @@ for ax, (nombre, archivo) in zip(axes, archivos.items()):
     ax.legend()
 
 
-plt.savefig("2b.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("Taller 1/2b.pdf", bbox_inches="tight", pad_inches=0.1)
 
 '''
 2.c. Analizar el continuo
@@ -242,4 +242,4 @@ axes[3].set_ylabel('Maximo de Conteos')
 axes[3].legend()
 
 plt.tight_layout()
-plt.savefig("2c.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("Taller 1/2c.pdf", bbox_inches="tight", pad_inches=0.1)

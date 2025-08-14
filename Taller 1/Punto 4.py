@@ -56,8 +56,8 @@ for material in materiales_anodo:
             continuo_interp = np.interp(energia, energia_filtrada, conteo_filtrado)
                 
         # Áreas con Simpson
-        area_total = simpson(conteo, energia) #Area total con datos originales
-        area_continuo = simpson(continuo_interp, energia) #continuo (sin picos)
+        area_total = simpson(y=conteo, x=energia) #Area total con datos originales
+        area_continuo = simpson(y=continuo_interp, x=energia) #continuo (sin picos)
         area_picos = area_total - area_continuo # Área de los picos
             
         # Porcentaje
@@ -88,5 +88,5 @@ plt.title("Porcentaje de área de picos vs continuo")
 plt.grid(True, linestyle=":")
 plt.legend()
 plt.tight_layout()
-plt.savefig("4.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.savefig("Taller 1/4.pdf", bbox_inches="tight", pad_inches=0.1)
 
