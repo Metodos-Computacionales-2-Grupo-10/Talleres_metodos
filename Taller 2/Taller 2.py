@@ -14,6 +14,20 @@ def generate_data(tmax,dt,A,freq,noise):
     return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
 Para todo este punto se necesitará la función que se pide escribir en la Sección 1.a"""
 
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.optimize as opt
+
+def generate_data(tmax,dt,A,freq,noise):
+ ts = np.arange(0,tmax+dt,dt)
+ return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
+
+datos_ruido=generate_data(15,0.13,5,1.5,0.7)
+plt.figure(figsize=(15,5))
+plt.scatter(datos_ruido[0],datos_ruido[1], color="orange")
+plt.title("Datos con ruido")
+plt.xlabel("Tiempo")
+plt.ylabel("Amplitud")
 
 """1.a Limite de Nyquist """
 """1.a.a. Implementación
@@ -28,13 +42,27 @@ donde 𝑁 es la longitud de los datos. NOTA: el array de frecuencias no necesar
 mismo tamaño que los datos.
 La función debe llamarse  Fourier_transform ."""
 
-
+def Fourier_transfrom(t,y,f):
+  T=[]
+  for i in range(len(f)):
+    transformados=(y*(np.exp((-1*2*np.pi*f[i]*t)*1j))).sum()
+    T.append(transformados)
+  return np.array(T)
 
 """1.a.b. Prueba
 Genere una señal con la función proporcionada arriba, y grafique su espectro calculado hasta
 2.7 veces la frecuencua de Nyquist. Guarde como  1.a.pdf"""
 
-
+niquist=((15/0.13)/15)/2
+frecuencias=np.linspace(0,niquist*2.7,400)
+F=Fourier_transfrom(datos_ruido[0], datos_ruido[1], frecuencias)
+plt.plot(frecuencias,np.abs(F), color="teal")
+plt.title("Transformada de Fourier")
+plt.xlabel("Frecuencia")
+plt.ylabel("Amplitud")
+plt.axvline(x=niquist,color='yellowgreen')
+plt.axvline(x=niquist*2,color='orange')
+plt.savefig("1.a.pdf")
 
 """1.b. Signal-to-noise
 La razón señal-a-ruido (SN) se define como la amplitud del fenómeno que nos importa (signal)
@@ -49,14 +77,70 @@ frecuencias. Grafique SNfreq vs SNtime.
 Encuentre algún modelo para lo que observa. Posiblemente se vea mejor en log-log.
 Para pensar: ¿qué variables harían cambiar este comportamiento? ( A ,  tmax ,  freq ,  dt , ...)"""
 
+n=0.01
+DATOS=[]
+SNfrec=[]
+SNtime=[]
+maximos=[]
+for i in range(100):
+  datos=generate_data(50,0.1,n*(i+1),2, 0.5)
+  nik=((50/0.1)/50)/2
+  frec=np.linspace(0.1,nik,200)
+  F=Fourier_transfrom(datos[0], datos[1], frec)
+  maxim=max(np.abs(F))
+  desv=F[abs(frec)<1.8].std()
+  SN=maxim*desv
+  DATOS.append(datos)
+  SNfrec.append((n*(i+1))/2)
+  SNtime.append(SN)
 
+def cuadratica (x, a, b,c):
+  return a*np.array(x)**2+b*np.array(x)+c
+
+params, cov=opt.curve_fit(cuadratica, SNfrec, SNtime)
+plt.plot(SNfrec,SNtime, color="maroon")
+plt.plot(SNfrec, cuadratica(SNfrec, *params), color="coral", linestyle="--", label="Ajuste cuadrático")
+plt.legend()
+plt.title("Comparación entre radio SN calculado y establecido en la generación de datos", fontsize=9)
+plt.suptitle("Relación entre señal y ruido (SN)")
+plt.xlabel("SN base")
+plt.ylabel("SN calculada")
+plt.yscale("log")
+plt.xscale("log")
+plt.savefig("1.b.pdf")
+
+#Variables que hacen cambiar la grafica anterior:
+# 1. Ruido, un menor ruido hace que haya menor dispercion de los datos y que el ajuste cuadratico se acople mas a los datos
+#    Puede no variar la cantidad de oscilaciones pero si su amplitud (es mucho menor si se reduce noice)
+# 2. dt, Reducir este valor causa un aplanamiento de la grafica por lo que menos datos hecen un peor ajuste
+#    Se puede llegar a un punto critico en el que tan pocos datos hacen que los valores tengan picos infinitesimalemente pequeños sin permiter comparación
+# 3. Frecuencia, una frecuencia diferente puede afectar la curva si esta abajo del limite 1.8 dede el cul se toma la desviación estandar
+#    Asimismo, un aumento exesivo de la frecuencia causaria que la curva se estabilizara pasado cierto punto osilando en un intervalo "pequeño" de valores altos (10^3)
+# 4. tmax, al tomar una ventana tan grande de tiempo la señal se hace mucho mas fuerte en comparacion  al ruido haciendo que la comparación entre SNs se estabilice.
 
 """1.c. Principio de indeterminación de las ondas
 Usando  la  función  para  generar  datos,  muestre  cómo  cambia  el  ancho  de  los  picos  de  la
 transformada en función de  tmax .
 Para pensar: ¿esto cambia si muevo alguna de las otras variables?"""
 
-
+colors = ["red", "orange", "yellowgreen", "teal", "purple"]
+duracion = [50, 100, 150, 200, 250]
+for i in range (1,6):
+  dat=generate_data(50*i,0.1,50, 2,0.7)
+  niquist2=((50*i/0.1)/20)/2
+  frecuencias=np.linspace(1,3,5000)
+  fourier=Fourier_transfrom(dat[0], dat[1], frecuencias)
+  plt.plot(frecuencias,np.abs(fourier), color=colors[i-1], label=f"Duración: {duracion[i-1]} s")
+  plt.title("Transformada de Fourier para diferentes ventanas de tiempo")
+  plt.xlabel("Frecuencia")
+  plt.ylabel("Amplitud")
+  plt.legend()
+  plt.xlim(1.95,2.05)
+  plt.savefig("1.c.pdf")
+# Se demuestra el principio de incertidumbre de ondas, ya que una mayor ventana de tiempo menor el ancho y mayor la intensidad de la frecuencia
+# pero se pierden cambios o variaciones temporales de la señal.
+# El paso al que tomo datos afecta directamente el ancho y la forma de los picos ya que si hace que haya muy pocos datos en al ventana de tiempo, hara que la transformada
+# resultante no tenga un pico tan claro.
 
 """1.d. (BONO) Más allá de Nyquist
 Modificque  la  función  generate_data   para  que  acepte  un  argumento  opcional  llamado
@@ -68,6 +152,30 @@ Dependiendo de qué tan grande sea ese ruido de muestreo, los picos repetidos de
 mada deberían irse eliminando, quedando la frecuencia real, incluso si ésta es mayor que la
 de Nyquist.
 En bloque neón hay una muestra de cómo podría quedar esta gráfica."""
+# BONO
+def generate_data2(tmax,dt,A,freq,noise,sampling_noise=0):
+  n=np.zeros(len(np.arange(0,tmax+dt,dt)))
+  s_noise=np.random.normal(loc=n,scale=sampling_noise)
+  ts = np.arange(0,tmax+dt,dt)
+  ts+=s_noise
+  return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
+
+plt.figure(figsize=(15,5))
+colors2=["maroon", "orangered", "gold", "yellowgreen", "darkcyan" ]
+for i in range(0,5):
+  tiempo, A=generate_data2(30,0.1,5,2,0.5,i*0.01)
+  NI=((30/0.1)/30)/2
+  frecuencias=np.linspace(0,NI*2.7,400)
+  fourier2=Fourier_transfrom(tiempo, A, frecuencias)
+  plt.plot(frecuencias,np.abs(fourier2), label=f"Sampling noise: {i*0.01}", color=colors2[i])
+  plt.axvline(x=NI,color='gray')
+  plt.axvline(x=NI*2,color='grey')
+  plt.title("Transformada de Fourier para diferentes ruido de muestreo")
+  plt.xlabel("Frecuencia")
+  plt.ylabel("Amplitud")
+  plt.legend()
+  plt.savefig("Bono_1.pdf")
+
 
 """2. Ciclos de actividad solar (FFT 1D)
 Adjuntos encontrará unos datos  SN_d_tot_V2.0.csv  que corresponden al registro histórico
