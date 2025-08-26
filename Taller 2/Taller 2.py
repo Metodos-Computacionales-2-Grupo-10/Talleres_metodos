@@ -56,7 +56,9 @@ def Fourier_transfrom(t,y,f):
 Genere una señal con la función proporcionada arriba, y grafique su espectro calculado hasta
 2.7 veces la frecuencua de Nyquist. Guarde como  1.a.pdf"""
 
-niquist=((15/0.13)/15)/2
+dt = datos_ruido[0][1] - datos_ruido[0][0]  # paso temporal
+fs = 1 / dt                                # frecuencia de muestreo
+niquist = fs / 2 
 frecuencias=np.linspace(0,niquist*2.7,400)
 F=Fourier_transfrom(datos_ruido[0], datos_ruido[1], frecuencias)
 plt.plot(frecuencias,np.abs(F), color="teal")
