@@ -376,12 +376,13 @@ for i in range(len(x)):
         y_min = max(0, y[i]-10)
         y_max = min(alto, y[i]+10)
         gato_filtrado[y_min:y_max, x[i]] = 0
-plt.imshow(np.abs(gato_filtrado), norm=LogNorm(), cmap="gray")
-plt.show()
+#plt.imshow(np.abs(gato_filtrado), norm=LogNorm(), cmap="gray")
+#plt.show()
 gato_limpio= np.fft.ifft2(np.fft.ifftshift(gato_filtrado))
 ###VISUALIZACION LIMPIA
-plt.imshow(gato_limpio.real, cmap="gray")
-plt.show()
+#plt.imshow(gato_limpio.real, cmap="gray")
+#plt.show()
+plt.imsave("Taller 2/Resultados/3.b.b.jpg", gato_limpio.real,cmap="gray")
 
 """4. Aplicación real: datos con muestreo aleatorio
 El archivo de datos  OGLE-LMC-CEP-0001.dat  contiene tres columnas: tiempo, brillo, e incer-
