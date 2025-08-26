@@ -6,6 +6,7 @@ import pandas as pd
 from scipy.signal import find_peaks
 from numba import njit
 from PIL import Image
+import scipy.optimize as opt
 """1. Intuición e interpretación (Transformada general)
 La siguiente es una función que puede utilizar en este punto para generar sus datos para este
 punto:
@@ -18,10 +19,6 @@ def generate_data(tmax,dt,A,freq,noise):
     ts = np.arange(0,tmax+dt,dt)
     return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
 Para todo este punto se necesitará la función que se pide escribir en la Sección 1.a"""
-
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy.optimize as opt
 
 def generate_data(tmax,dt,A,freq,noise):
  ts = np.arange(0,tmax+dt,dt)
@@ -67,7 +64,7 @@ plt.xlabel("Frecuencia")
 plt.ylabel("Amplitud")
 plt.axvline(x=niquist,color='yellowgreen')
 plt.axvline(x=niquist*2,color='orange')
-plt.savefig("1.a.pdf")
+plt.savefig("Taller 2/Resultados/1.a.pdf")
 
 """1.b. Signal-to-noise
 La razón señal-a-ruido (SN) se define como la amplitud del fenómeno que nos importa (signal)
@@ -112,7 +109,7 @@ plt.xlabel("SN base")
 plt.ylabel("SN calculada")
 plt.yscale("log")
 plt.xscale("log")
-plt.savefig("1.b.pdf")
+plt.savefig("Taller 2/Resultados/1.b.pdf")
 
 #Variables que hacen cambiar la grafica anterior:
 # 1. Ruido, un menor ruido hace que haya menor dispercion de los datos y que el ajuste cuadratico se acople mas a los datos
@@ -141,7 +138,7 @@ for i in range (1,6):
   plt.ylabel("Amplitud")
   plt.legend()
   plt.xlim(1.95,2.05)
-  plt.savefig("1.c.pdf")
+  plt.savefig("Taller 2/Resultados/1.c.pdf")
 # Se demuestra el principio de incertidumbre de ondas, ya que una mayor ventana de tiempo menor el ancho y mayor la intensidad de la frecuencia
 # pero se pierden cambios o variaciones temporales de la señal.
 # El paso al que tomo datos afecta directamente el ancho y la forma de los picos ya que si hace que haya muy pocos datos en al ventana de tiempo, hara que la transformada
@@ -179,7 +176,7 @@ for i in range(0,5):
   plt.xlabel("Frecuencia")
   plt.ylabel("Amplitud")
   plt.legend()
-  plt.savefig("Bono_1.pdf")
+  plt.savefig("Taller 2/Resultados/Bono_1.pdf")
 
 
 """2. Ciclos de actividad solar (FFT 1D)
@@ -229,10 +226,10 @@ fft_pos  = np.abs(t_fourier[:N_total//2])
 frecuencia_principal = freq_pos[np.argmax(fft_pos[1:])]
 Periodo_ciclo_solar = 1/frecuencia_principal
 
-print("Frecuencia principal:", frecuencia_principal)
-print("Periodo del ciclo solar:", Periodo_ciclo_solar)
+###print("Frecuencia principal:", frecuencia_principal)
+###print("Periodo del ciclo solar:", Periodo_ciclo_solar)
 
-with open("2.b.txt","w") as file:
+with open("Taller 2/Resultados/2.b.txt","w") as file:
     file.write("Periodo del ciclo Solar: "+str(Periodo_ciclo_solar)+" dias")
 
 # Filtro pasa bajas
@@ -258,8 +255,8 @@ plt.title("Manchas Solares en el tiempo")
 plt.legend()
 plt.grid()
 plt.tight_layout()
-plt.savefig("Taller 2/2b data.pdf", bbox_inches="tight", pad_inches=0.1)
-print("Gráfica guardada como 'Taller 2/2b data.pdf'")
+plt.savefig("Taller 2/Resultados/2b data.pdf", bbox_inches="tight", pad_inches=0.1)
+###print("Gráfica guardada como 'Taller 2/2b data.pdf'")
 plt.close()
 ###enccontrando picos. Se uso la segunda senal ya que no tiene picos 'dobles)
 altura_minima = 0.2 * np.max(senal_filtrada2)
@@ -271,8 +268,8 @@ plt.ylabel("Conteo Manchas")
 plt.title("Maximos de Manchas Solares")
 plt.grid()
 plt.tight_layout()
-plt.savefig("Taller 2/2b.maxima.pdf", bbox_inches="tight", pad_inches=0.1)
-print("Gráfica guardada como 'Taller 2/2b.maxima.pdf'")
+plt.savefig("Taller 2/Resultados/2b.maxima.pdf", bbox_inches="tight", pad_inches=0.1)
+###print("Gráfica guardada como 'Taller 2/2b.maxima.pdf'")
 """3. Filtrando imágenes (FFT 2D)"""
 """3.a. Desenfoque
 Adjunta encontrará una foto del gato Miette. Multiplique la transformada 2D con una imagen
@@ -317,6 +314,66 @@ Para  comprobar  que  sea  esta  realmente  la  frecuencia  de  la  señal,  cal
 Grafique el brillo de la estrella en función de 𝜙, guarde en  4.pdf ."""
 
 
+Datos=pd.read_csv('Taller 2/OGLE-LMC-CEP-0001.dat', sep=" ", header=None)
+Datos.columns=["Tiempo", "Brillo", "Delta brillo"]
+Datos
+
+plt.scatter(Datos["Tiempo"], Datos["Brillo"], color="teal")
+
+def Fourier_transfrom(t,y,f):
+  T=[]
+  for i in range(len(f)):
+    transformados=(y*(np.exp((-1*2*np.pi*f[i]*t)*1j))).sum()
+    T.append(transformados)
+  return np.array(T)
+
+tiempos=np.array(Datos["Tiempo"])
+brillo=np.array(Datos["Brillo"])
+
+general=np.linspace(5263, 7495, 7495-5263+1)
+Tnuevos=[]
+Bnuevos=[]
+for i in range(len(general)):
+  if general[i] in np.round(tiempos,0):
+    w=np.where(np.round(tiempos,0)==general[i])
+    Tnuevos.append(round(tiempos[w][0],0))
+    Bnuevos.append(brillo[w][0])
+  else:
+    Tnuevos.append(round(general[i],0))
+    Bnuevos.append(np.mean(brillo))
+Tnuevos=np.array(Tnuevos)
+Bnuevos=np.array(Bnuevos)
+plt.scatter(Tnuevos, Bnuevos, color="navy")
+
+ny=(len(general)/(7495-5263))/2
+frecuencias2=np.linspace(0.05,0.5, len(Tnuevos))
+
+Fi=Fourier_transfrom(Tnuevos, Bnuevos, frecuencias2)
+F2=np.fft.rfft(Bnuevos)
+frecc=np.fft.rfftfreq(len(Bnuevos),1)
+plt.plot(frecuencias2[:], abs(Fi)[:], color="yellowgreen", zorder=1)
+plt.plot(frecc[1:], abs(F2)[1:], color="purple")
+pico2=np.where(abs(F2)==abs(F2)[10:].max())
+plt.scatter(frecc[pico2], abs(F2)[pico2], color="indigo", zorder=4)
+pico=np.where(abs(Fi)==abs(Fi[700:]).max())
+plt.scatter(frecuencias2[pico], abs(Fi)[pico], color="olive")
+plt.xlabel("Frecuencia (Hz)")
+plt.yscale("log")
+plt.ylabel("Amplitud")
+plt.legend(["Fourier", "FFT"])
+plt.title("Transformada de Fourier para datos")
+frecuencia_imp=frecuencias2[pico]
+frecuencia_imp2=frecc[pico2]
+#print("La frecuencia de la señal es: "+ str(frecuencia_imp))
+#print("La frecuencia de la señal es: "+ str(frecuencia_imp2))
+
+phi = np.mod(frecuencia_imp2*tiempos,1)
+plt.figure(figsize=(10,3))
+plt.scatter(phi,brillo, color="orange")
+plt.xlabel("ϕ (fase)")
+plt.ylabel("Brillo")
+plt.title("Comparación de brillo con su fase")
+plt.savefig("Taller 2/Resultados/4.pdf")
 
 
 """5. Aplicación real: Reconstrucción tomográfica filtrada
