@@ -177,5 +177,41 @@ craneal. Use el número de su grupo. Si por algún motivo algún miembro de su g
 sensibilidad a las imágenes anatómicas, use a  skelly.npy
 Guarde la imagen filtrada resultante en  4.png .
 """
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import ndimage as ndi
+
+# Filtro pasa altas
+def filtro_pasa_altas(signal):
+    N = len(signal)
+    freqs = np.fft.fftfreq(N)
+    H = np.abs(freqs)   # Ram-Lak
+    F = np.fft.fft(signal)
+    return np.real(np.fft.ifft(F * H))
+
+def reconstruccion(file="11.npy", rows=356):
+    # Cargar TODAS las proyecciones: matriz (n_angulos, n_pixeles)
+    proyecciones = np.load(file)  
+    n_angulos, n_pixeles = proyecciones.shape
+
+    suma = np.zeros((rows, rows))
+
+    for i in range(n_angulos):
+        signal = proyecciones[i, :]   # proyección individual
+        signal_f = filtro_pasa_altas(signal)
+
+        # Expandir a 2D
+        proy = np.tile(signal_f[:, None], rows).T  
+
+        # Ángulo de esta proyección
+        angulo = i * 180 / n_angulos
+
+        # Rotar e ir sumando
+        proy_rotada = ndi.rotate(proy, angulo, reshape=False, mode="reflect")
+        suma += proy_rotada
+
+    return suma
+imagen = reconstruccion("11.npy", rows=356)
+plt.savefig("4.png", bbox_inches="tight")
 
 
