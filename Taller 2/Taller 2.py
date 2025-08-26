@@ -4,6 +4,8 @@ import scipy as sci
 import datetime
 import pandas as pd
 from scipy.signal import find_peaks
+from numba import njit
+from PIL import Image
 """1. Intuición e interpretación (Transformada general)
 La siguiente es una función que puede utilizar en este punto para generar sus datos para este
 punto:
@@ -133,22 +135,36 @@ x2 = t_fourier * filtro_2
 
 # IFFT (tomar solo la parte real y recortar al tamaño original)
 senal_filtrada = np.fft.ifft(espectro_filtrado).real
-senal_filtrada = senal_filtrada[:len(datos_2['spots'])]
+senal_filtrada = 1.8*senal_filtrada[:len(datos_2['spots'])]
 senal_filtrada2 = np.fft.ifft(x2).real
-senal_filtrada2 = senal_filtrada2[:len(datos_2['spots'])]
+senal_filtrada2 = 1.8*senal_filtrada2[:len(datos_2['spots'])]
 #Gráficando
 plt.figure(figsize=(10,5))
 plt.plot(datos_2['fecha'], senal_filtrada2, label='Señal Filtrada Threshold',color='black')
-plt.plot(datos_2['fecha'], senal_filtrada, label="Señal Filtrada Gaussiana",color='r')
+##Se multiplico * por un valor para que los picos tuvieran mayor amplitud y coincidieran con la grafica. Inicialmente tenian aprox la mitad de altura
+plt.plot(datos_2['fecha'],senal_filtrada, label="Señal Filtrada Gaussiana",color='r')
 plt.scatter(datos_2['fecha'], datos_2['spots'], s=10, label="Datos Originales")
 plt.xlabel("Día")
 plt.ylabel("Conteo Manchas")
-plt.title("Manchas Solares")
+plt.title("Manchas Solares en el tiempo")
 plt.legend()
 plt.grid()
 plt.tight_layout()
 plt.savefig("Taller 2/2b data.pdf", bbox_inches="tight", pad_inches=0.1)
 print("Gráfica guardada como 'Taller 2/2b data.pdf'")
+plt.close()
+###enccontrando picos. Se uso la segunda senal ya que no tiene picos 'dobles)
+altura_minima = 0.2 * np.max(senal_filtrada2)
+picos, _ = find_peaks(senal_filtrada2, prominence=altura_minima)
+###print(picos)
+plt.plot(datos_2['fecha'][picos], senal_filtrada2[picos])
+plt.xlabel("Día")
+plt.ylabel("Conteo Manchas")
+plt.title("Maximos de Manchas Solares")
+plt.grid()
+plt.tight_layout()
+plt.savefig("Taller 2/2b.maxima.pdf", bbox_inches="tight", pad_inches=0.1)
+print("Gráfica guardada como 'Taller 2/2b.maxima.pdf'")
 """3. Filtrando imágenes (FFT 2D)"""
 """3.a. Desenfoque
 Adjunta encontrará una foto del gato Miette. Multiplique la transformada 2D con una imagen
