@@ -503,31 +503,17 @@ def filtro_pasa_altas(signal):
     F = np.fft.fft(signal)
     return np.real(np.fft.ifft(F * H))
 
-def reconstruccion(file="11.npy", rows=356):
-    # Cargar TODAS las proyecciones: matriz (n_angulos, n_pixeles)
-    proyecciones = np.load(file)  
-    n_angulos, n_pixeles = proyecciones.shape
-
-    suma = np.zeros((rows, rows))
-
-    for i in range(n_angulos):
-        signal = proyecciones[i, :]   # proyección individual
-        signal_f = filtro_pasa_altas(signal)
-
-        # Expandir a 2D
-        proy = np.tile(signal_f[:, None], rows).T  
-
-        # Ángulo de esta proyección
-        angulo = i * 180 / n_angulos
-
-        # Rotar e ir sumando
-        proy_rotada = ndi.rotate(proy, angulo, reshape=False, mode="reflect")
-        suma += proy_rotada
-
-    return suma
-imagen = reconstruccion("11.npy", rows=356)
-plt.imshow(imagen, cmap="gray")
+def reconstruccion(signal):
+    L = []
+    for i in range(0,len(signal)):
+      pepo = filtro_pasa_altas(signal[i])
+      sig = pepo
+      sig_tile = np.tile(sig[:,None],365).T
+      sig_rotate = ndi.rotate(sig_tile,0.5*i,reshape=False,mode="reflect")
+      L.append(sig_rotate)
+    reconstruccion = np.sum(L,axis=0)
+    return reconstruccion
+a = reconstruccion(file1)
+plt.imshow(a,cmap="gray")
 plt.axis("off")
 plt.savefig("4.png", bbox_inches="tight")
-
-
