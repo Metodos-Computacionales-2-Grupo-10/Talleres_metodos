@@ -494,7 +494,9 @@ Guarde la imagen filtrada resultante en  4.png .
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage as ndi
-file1 = np.load('11.npy')
+url = "https://raw.githubusercontent.com/usuario/repositorio/rama/archivo.npy"
+response = requests.get(url)
+file1 = np.load(io.BytesIO(response.content))
 # Filtro pasa altas
 def filtro_pasa_altas(signal):
     N = len(signal)
