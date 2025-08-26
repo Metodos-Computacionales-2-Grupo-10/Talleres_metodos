@@ -320,25 +320,69 @@ la  transformada  inversa  para  obtener  la  imagen  sin  ruido  periódico.  G
 3.b.a.jpg
 Para pensar: en vez de ceros, ¿se le ocurre alguna manera mejor de quitar estos picos?
 """
-'''pato=np.array(Image.open("Taller 2/p_a_t_o.jpg"))
+pato=np.array(Image.open("Taller 2/p_a_t_o.jpg"))
 pato_fft = np.fft.fftshift(np.fft.fft2(pato))
-plt.imshow(abs(pato_fft), norm="log")
+from matplotlib.colors import LogNorm
+###VISUALIZACION FOURIER
+#plt.imshow(np.abs(pato_fft), norm=LogNorm(), cmap="gray")
+#plt.show()
+pato_filtrado=pato_fft.copy()
+#puntos que saque a ojo
+pato_filtrado[240,256]=0.
+pato_filtrado[251,251]=0.
+pato_filtrado[261,261]=0.
+pato_filtrado[272,256]=0.
+pato_filtrado[256,272]=0.
+pato_filtrado[256,240]=0.
+pato_filtrado[272,256]=0.
+pato_filtrado[240,256]=0.
 
-pato_limpio=None
-plt.imsave("Taller 2/Resultados/3.b.a.jpg", pato_limpio)'''
+##me canse buscando la perfeccion asi que arriesgue calidad  con esta
+##chambonada de cortes
+###VERTICALES
+pato_filtrado[0:250, 250:260] = 0.  
+pato_filtrado[270:500, 250:260] = 0.
+##horizontales
+pato_filtrado[250:260, 0:250] = 0.
+pato_filtrado[250:260, 270:500] = 0.
+###plt.imshow(np.abs(pato_filtrado), norm=LogNorm(), cmap="gray")
+###plt.show()
+pato_limpio= np.fft.ifft2(np.fft.ifftshift(pato_filtrado))
+###VISUALIZACION LIMPIA
+###plt.imshow(pato_limpio.real, cmap="gray")
+###plt.show()
+plt.imsave("Taller 2/Resultados/3.b.a.jpg", pato_limpio.real,cmap="gray")
 
 """3.b.b. G_a_t_o
 Haga  lo  mismo  con  la  imagen  del  gato  que  parece  que  estuviera  detrás  de  unas  persianas
 medio abiertas. Guarde en  3.b.b.png
 Para pensar: ¿se le ocurre alguna manera de detectar estos picos automáticamente?
 """
-'''gato=np.array(Image.open("Taller 2/g_a_t_o.png"))
+gato=np.array(Image.open("Taller 2/g_a_t_o.png"))
 gato_fft = np.fft.fftshift(np.fft.fft2(gato))
-plt.imshow(abs(gato_fft), norm="log")
+gato_filtrado=gato_fft.copy()
+###VISUALIZACION FOURIER
+#plt.imshow(np.abs(gato_fft), norm=LogNorm(), cmap="gray")
+#plt.show()
+##Para la diagonal hay que hacer un proceso 
+m = (159-578)/(255-486)  # pendiente a ojo
+b = -300                # intercepto a ojo 
+alto, ancho = gato_filtrado.shape[:2]
+x = np.arange(800)       # todos los píxeles de ancho
+y = (m*x + b).astype(int)
 
-gato_limpio=None
-plt.imsave("Taller 2/Resultados/3.b.b.jpg", gato_limpio)
-'''
+for i in range(len(x)):
+    if 0 <= y[i] < 800:  # asegurar que no se salga del rango
+        y_min = max(0, y[i]-10)
+        y_max = min(alto, y[i]+10)
+        gato_filtrado[y_min:y_max, x[i]] = 0
+plt.imshow(np.abs(gato_filtrado), norm=LogNorm(), cmap="gray")
+plt.show()
+gato_limpio= np.fft.ifft2(np.fft.ifftshift(gato_filtrado))
+###VISUALIZACION LIMPIA
+plt.imshow(gato_limpio.real, cmap="gray")
+plt.show()
+
 """4. Aplicación real: datos con muestreo aleatorio
 El archivo de datos  OGLE-LMC-CEP-0001.dat  contiene tres columnas: tiempo, brillo, e incer-
 tidumbre en el brillo de una estrella. El tiempo está dado en el número fraccionario de días
