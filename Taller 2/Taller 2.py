@@ -5,7 +5,7 @@ import datetime
 import pandas as pd
 from scipy.signal import find_peaks
 from numba import njit
-from PIL import Image as image
+from PIL import Image
 import scipy.optimize as opt
 """1. Intuición e interpretación (Transformada general)
 La siguiente es una función que puede utilizar en este punto para generar sus datos para este
@@ -280,9 +280,36 @@ hacer esto para cada canal de color de la imagen.
 Se recomienda abrir la imagen con  np.array(PIL.Image.open(...)) . Se recomienda tratar
 la transformada de la imagen con  fftshift .
 Guarde la imagen borrosa como  3.a.jpg ."""
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
 
-miette=image.open("Taller 2/Miette.jpg")
 
+miette = np.array(Image.open("Taller 2/Miette.jpg"))
+miette_borrosa = np.zeros_like(miette, dtype=float)#Creo la base
+rows, cols = miette.shape[0], miette.shape[1]
+X, Y = np.meshgrid(np.arange(cols), np.arange(rows))
+# Centro de la imagen
+cx, cy = cols // 2, rows // 2
+
+sigma = 50 # más grande = más desenfoque
+
+# Gaussiana centrada ***Correccion de Chat gpt al restar cx y cy
+gaussiana = np.exp(-((X-cx)**2 + (Y-cy)**2) / (2*sigma**2))
+gaussiana = gaussiana / np.max(gaussiana)
+
+for c in range(3):
+    canal = miette[:,:,c] #c es cada canal Rojo, Verde o Azul
+    canal_f = np.fft.fft2(canal)
+    canal_f = np.fft.fftshift(canal_f)
+    canal_filt = canal_f * gaussiana #aplicamos filtro
+    canal_filt = np.fft.ifftshift(canal_filt)
+    canal_b = np.fft.ifft2(canal_filt).real
+    miette_borrosa[:,:,c] = canal_b
+
+# Ajustar valores y guardar **recomendacion chat GPT plt.imsave no sirvio
+miette_borrosa = np.clip(miette_borrosa, 0, 255).astype(np.uint8)
+Image.fromarray(miette_borrosa).save("Taller 2/Resultados/3.a.jpg")
 
 """3.b. Ruido periódico"""
 """3.b.a. P_a_t_o
@@ -293,16 +320,25 @@ la  transformada  inversa  para  obtener  la  imagen  sin  ruido  periódico.  G
 3.b.a.jpg
 Para pensar: en vez de ceros, ¿se le ocurre alguna manera mejor de quitar estos picos?
 """
+'''pato=np.array(Image.open("Taller 2/p_a_t_o.jpg"))
+pato_fft = np.fft.fftshift(np.fft.fft2(pato))
+plt.imshow(abs(pato_fft), norm="log")
 
-
+pato_limpio=None
+plt.imsave("Taller 2/Resultados/3.b.a.jpg", pato_limpio)'''
 
 """3.b.b. G_a_t_o
 Haga  lo  mismo  con  la  imagen  del  gato  que  parece  que  estuviera  detrás  de  unas  persianas
 medio abiertas. Guarde en  3.b.b.png
 Para pensar: ¿se le ocurre alguna manera de detectar estos picos automáticamente?
 """
+'''gato=np.array(Image.open("Taller 2/g_a_t_o.png"))
+gato_fft = np.fft.fftshift(np.fft.fft2(gato))
+plt.imshow(abs(gato_fft), norm="log")
 
-
+gato_limpio=None
+plt.imsave("Taller 2/Resultados/3.b.b.jpg", gato_limpio)
+'''
 """4. Aplicación real: datos con muestreo aleatorio
 El archivo de datos  OGLE-LMC-CEP-0001.dat  contiene tres columnas: tiempo, brillo, e incer-
 tidumbre en el brillo de una estrella. El tiempo está dado en el número fraccionario de días
