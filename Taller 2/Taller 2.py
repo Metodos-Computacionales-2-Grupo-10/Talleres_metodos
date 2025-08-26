@@ -523,9 +523,9 @@ def reconstruccion(file, rows=356):
         suma += proy_rotada
 
     return suma
-imagen = reconstruccion("Taller 2\tomografia\tomography_data\11.npy",rows=356)
+imagen = reconstruccion("Taller 2/tomography_data/11.npy",rows=356)
 plt.imshow(imagen, cmap="gray")
 plt.axis("off")
-plt.savefig("4.png", bbox_inches="tight")
+plt.savefig("Taller 2/Resultados/4.png", bbox_inches="tight")
 
 
