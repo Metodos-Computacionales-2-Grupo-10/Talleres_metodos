@@ -212,6 +212,8 @@ def reconstruccion(file="11.npy", rows=356):
 
     return suma
 imagen = reconstruccion("11.npy", rows=356)
+plt.imshow(imagen, cmap="gray")
+plt.axis("off")
 plt.savefig("4.png", bbox_inches="tight")
 
 
