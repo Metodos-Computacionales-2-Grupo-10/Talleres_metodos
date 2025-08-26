@@ -398,67 +398,46 @@ Para  comprobar  que  sea  esta  realmente  la  frecuencia  de  la  señal,  cal
 φ = np.mod(f*t,1) , donde 𝑓 es la frecuencia de la señal y 𝑡 es la columna de tiempo.
 Grafique el brillo de la estrella en función de 𝜙, guarde en  4.pdf ."""
 
-
 Datos=pd.read_csv('Taller 2/OGLE-LMC-CEP-0001.dat', sep=" ", header=None)
 Datos.columns=["Tiempo", "Brillo", "Delta brillo"]
-#print(Datos.head())
+Datos
 
 plt.scatter(Datos["Tiempo"], Datos["Brillo"], color="teal")
 
-def Fourier_transfrom(t,y,f):
+def Fourier_transform(t,y,f):
   T=[]
   for i in range(len(f)):
     transformados=(y*(np.exp((-1*2*np.pi*f[i]*t)*1j))).sum()
     T.append(transformados)
   return np.array(T)
 
-tiempos=np.array(Datos["Tiempo"])
-brillo=np.array(Datos["Brillo"])
+t = Datos["Tiempo"].to_numpy(dtype=float)
+y = Datos["Brillo"].to_numpy(dtype=float)
 
-general=np.linspace(5263, 7495, 7495-5263+1)
-Tnuevos=[]
-Bnuevos=[]
-for i in range(len(general)):
-  if general[i] in np.round(tiempos,0):
-    w=np.where(np.round(tiempos,0)==general[i])
-    Tnuevos.append(round(tiempos[w][0],0))
-    Bnuevos.append(brillo[w][0])
-  else:
-    Tnuevos.append(round(general[i],0))
-    Bnuevos.append(np.mean(brillo))
-Tnuevos=np.array(Tnuevos)
-Bnuevos=np.array(Bnuevos)
-plt.scatter(Tnuevos, Bnuevos, color="navy")
+# Centrar datos ---
+y_centrada = y - np.mean(y)
 
-ny=(len(general)/(7495-5263))/2
-frecuencias2=np.linspace(0.05,0.5, len(Tnuevos))
+# Rango de frecuencias a explorar 
+frecuencias = np.linspace(0, 8, 40000)  # alta resolución
+transformada = Fourier_transform(t, y_centrada, frecuencias)
+amplitud = np.abs(transformada)
 
-Fi=Fourier_transfrom(Tnuevos, Bnuevos, frecuencias2)
-F2=np.fft.rfft(Bnuevos)
-frecc=np.fft.rfftfreq(len(Bnuevos),1)
-plt.plot(frecuencias2[:], abs(Fi)[:], color="yellowgreen", zorder=1)
-plt.plot(frecc[1:], abs(F2)[1:], color="purple")
-pico2=np.where(abs(F2)==abs(F2)[10:].max())
-plt.scatter(frecc[pico2], abs(F2)[pico2], color="indigo", zorder=4)
-pico=np.where(abs(Fi)==abs(Fi[700:]).max())
-plt.scatter(frecuencias2[pico], abs(Fi)[pico], color="olive")
-plt.xlabel("Frecuencia (Hz)")
-plt.yscale("log")
-plt.ylabel("Amplitud")
-plt.legend(["Fourier", "FFT"])
-plt.title("Transformada de Fourier para datos")
-frecuencia_imp=frecuencias2[pico]
-frecuencia_imp2=frecc[pico2]
-#print("La frecuencia de la señal es: "+ str(frecuencia_imp))
-#print("La frecuencia de la señal es: "+ str(frecuencia_imp2))
+# Encontrar pico de la transformada 
+pico_idx = np.argmax(amplitud)
+f_true = frecuencias[pico_idx]
 
-phi = np.mod(frecuencia_imp2*tiempos,1)
-plt.figure(figsize=(10,3))
-plt.scatter(phi,brillo, color="orange")
+# Calcular fase
+phi = np.mod(f_true * t, 1.0)
+
+# Graficar brillo vs fase 
+plt.figure(figsize=(8, 5))
+plt.scatter(phi, y_centrada, color="orange", s=12)
 plt.xlabel("ϕ (fase)")
-plt.ylabel("Brillo")
-plt.title("Comparación de brillo con su fase")
-plt.savefig("Taller 2/Resultados/4.pdf")
+plt.ylabel("Brillo centrado")
+plt.title("Brillo en función de la fase ϕ")
+
+
+plt.savefig("Taller 2/Resultados/4.pdf", format="pdf")
 
 
 """5. Aplicación real: Reconstrucción tomográfica filtrada
