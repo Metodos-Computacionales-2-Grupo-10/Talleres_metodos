@@ -5,7 +5,7 @@ import datetime
 import pandas as pd
 from scipy.signal import find_peaks
 from numba import njit
-from PIL import Image
+from PIL import Image as image
 import scipy.optimize as opt
 """1. Intuición e interpretación (Transformada general)
 La siguiente es una función que puede utilizar en este punto para generar sus datos para este
@@ -65,7 +65,7 @@ plt.ylabel("Amplitud")
 plt.axvline(x=niquist,color='yellowgreen')
 plt.axvline(x=niquist*2,color='orange')
 plt.savefig("Taller 2/Resultados/1.a.pdf")
-
+plt.close()
 """1.b. Signal-to-noise
 La razón señal-a-ruido (SN) se define como la amplitud del fenómeno que nos importa (signal)
 sobre una medida del ruido del fondo (noise), como lo puede ser la desviación estándar.
@@ -110,7 +110,7 @@ plt.ylabel("SN calculada")
 plt.yscale("log")
 plt.xscale("log")
 plt.savefig("Taller 2/Resultados/1.b.pdf")
-
+plt.close()
 #Variables que hacen cambiar la grafica anterior:
 # 1. Ruido, un menor ruido hace que haya menor dispercion de los datos y que el ajuste cuadratico se acople mas a los datos
 #    Puede no variar la cantidad de oscilaciones pero si su amplitud (es mucho menor si se reduce noice)
@@ -139,6 +139,7 @@ for i in range (1,6):
   plt.legend()
   plt.xlim(1.95,2.05)
   plt.savefig("Taller 2/Resultados/1.c.pdf")
+  plt.close()
 # Se demuestra el principio de incertidumbre de ondas, ya que una mayor ventana de tiempo menor el ancho y mayor la intensidad de la frecuencia
 # pero se pierden cambios o variaciones temporales de la señal.
 # El paso al que tomo datos afecta directamente el ancho y la forma de los picos ya que si hace que haya muy pocos datos en al ventana de tiempo, hara que la transformada
@@ -177,7 +178,7 @@ for i in range(0,5):
   plt.ylabel("Amplitud")
   plt.legend()
   plt.savefig("Taller 2/Resultados/Bono_1.pdf")
-
+plt.close()
 
 """2. Ciclos de actividad solar (FFT 1D)
 Adjuntos encontrará unos datos  SN_d_tot_V2.0.csv  que corresponden al registro histórico
@@ -269,6 +270,7 @@ plt.title("Maximos de Manchas Solares")
 plt.grid()
 plt.tight_layout()
 plt.savefig("Taller 2/Resultados/2b.maxima.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.close()
 ###print("Gráfica guardada como 'Taller 2/2b.maxima.pdf'")
 """3. Filtrando imágenes (FFT 2D)"""
 """3.a. Desenfoque
@@ -279,6 +281,7 @@ Se recomienda abrir la imagen con  np.array(PIL.Image.open(...)) . Se recomienda
 la transformada de la imagen con  fftshift .
 Guarde la imagen borrosa como  3.a.jpg ."""
 
+miette=image.open("Taller 2/Miette.jpg")
 
 
 """3.b. Ruido periódico"""
