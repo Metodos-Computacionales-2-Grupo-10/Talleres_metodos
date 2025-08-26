@@ -26,11 +26,11 @@ def generate_data(tmax,dt,A,freq,noise):
  return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
 
 datos_ruido=generate_data(15,0.13,5,1.5,0.7)
-plt.figure(figsize=(15,5))
-plt.scatter(datos_ruido[0],datos_ruido[1], color="orange")
-plt.title("Datos con ruido")
-plt.xlabel("Tiempo")
-plt.ylabel("Amplitud")
+#plt.figure(figsize=(15,5))
+#plt.scatter(datos_ruido[0],datos_ruido[1], color="orange")
+#plt.title("Datos con ruido")
+#plt.xlabel("Tiempo")
+#plt.ylabel("Amplitud")
 
 """1.a Limite de Nyquist """
 """1.a.a. Implementación
