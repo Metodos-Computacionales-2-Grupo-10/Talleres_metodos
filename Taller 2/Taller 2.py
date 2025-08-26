@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy as sci
+import datetime
+import pandas as pd
+from scipy.signal import find_peaks
 """1. Intuición e interpretación (Transformada general)
 La siguiente es una función que puede utilizar en este punto para generar sus datos para este
 punto:
@@ -74,15 +77,22 @@ Adjuntos encontrará unos datos  SN_d_tot_V2.0.csv  que corresponden al registro
 más  extenso  de  manchas  solares  que  pude  conseguir.  Tanto  los  datos  como  su  descripción
 están  disponibles  públicamente  desde  el  Observatorio  Real  de  Bélgica,  pero  con  el  archivo
 adjunto basta."""
+###Carga datos
+datos_2=pd.read_csv("Taller 2/SN_d_tot_V2.0.csv")
+datos_2['fecha'] = pd.to_datetime(datos_2[['year', 'month', 'day']])
+#datos_2.info()
+#print(datos_2.head())
 
 """2.a. Arreglar
 Importe los datos. Notará que antes de 1850 hay algunos días que tienen −1 manchas. Esto
 claramente quiere decir que no se tomaron datos (NO quiere decir que no hayan manchas).
 Use algún método que no sea de Fourier para reemplazar estos valores faltantes.
 Para pensar: ¿por qué no puede simplemente quitarlos?"""
-
-
-
+###Inicialmente pensamos borrarla porque solo implicaba un 4% de datos, pero esto podria generar problemas en Fourier. 
+# Por ejemplo, no sabemos aun si alteraria la frecuencia de muestreo y esto podria alterar la obtencion de algunas frecuencias.
+datos_2['spots'] = datos_2['spots'].replace(-1, np.nan)
+datos_2['spots'] = datos_2['spots'].interpolate(method='linear', limit_direction='both')
+#Remplazo -1 por Nan e interpolo en ambos sentidos
 """2.b. Filtrado y análisis
 • Obtenga el período del ciclo solar en días.
 ‣ BONO: use el truco descrito en clase para encontrar el período con aún más precisión.
@@ -97,9 +107,48 @@ máximo en  2.b.maxima.pdf .
 ‣ Se baja si se considera el año como variable categórica.
 Para pensar: ¿qué tanto se puede filtrar la señal?
 """
+# FFT con zero padding
+N_total = len(datos_2['spots']) + 1000
+t_fourier = np.fft.fft(datos_2['spots'], n=N_total)
+frecuencias = np.fft.fftfreq(N_total, d=1)
 
+# hallando el periodo
+freq_pos = frecuencias[:N_total//2] #N_total//2 es freq_nyquist
+fft_pos  = np.abs(t_fourier[:N_total//2])
 
+frecuencia_principal = freq_pos[np.argmax(fft_pos[1:])]
+Periodo_ciclo_solar = 1/frecuencia_principal
 
+print("Frecuencia principal:", frecuencia_principal)
+print("Periodo del ciclo solar:", Periodo_ciclo_solar)
+
+with open("2.b.txt","w") as file:
+    file.write("Periodo del ciclo Solar: "+str(Periodo_ciclo_solar)+" dias")
+
+# Filtro pasa bajas
+filtro = np.exp(-(frecuencias*1000)**2) #si a muy grande es una linea recta, si muy pequeno mucho ruido
+espectro_filtrado = t_fourier * filtro
+filtro_2 = np.where(np.abs(frecuencias) < 0.001, 1, 0) #si a muy grande  mucho ruido, si a muy pequena se aplana
+x2 = t_fourier * filtro_2
+
+# IFFT (tomar solo la parte real y recortar al tamaño original)
+senal_filtrada = np.fft.ifft(espectro_filtrado).real
+senal_filtrada = senal_filtrada[:len(datos_2['spots'])]
+senal_filtrada2 = np.fft.ifft(x2).real
+senal_filtrada2 = senal_filtrada2[:len(datos_2['spots'])]
+#Gráficando
+plt.figure(figsize=(10,5))
+plt.plot(datos_2['fecha'], senal_filtrada2, label='Señal Filtrada Threshold',color='black')
+plt.plot(datos_2['fecha'], senal_filtrada, label="Señal Filtrada Gaussiana",color='r')
+plt.scatter(datos_2['fecha'], datos_2['spots'], s=10, label="Datos Originales")
+plt.xlabel("Día")
+plt.ylabel("Conteo Manchas")
+plt.title("Manchas Solares")
+plt.legend()
+plt.grid()
+plt.tight_layout()
+plt.savefig("Taller 2/2b data.pdf", bbox_inches="tight", pad_inches=0.1)
+print("Gráfica guardada como 'Taller 2/2b data.pdf'")
 """3. Filtrando imágenes (FFT 2D)"""
 """3.a. Desenfoque
 Adjunta encontrará una foto del gato Miette. Multiplique la transformada 2D con una imagen
