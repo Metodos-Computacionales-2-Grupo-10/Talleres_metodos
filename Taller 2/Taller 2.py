@@ -7,6 +7,7 @@ from scipy.signal import find_peaks
 from numba import njit
 from PIL import Image
 import scipy.optimize as opt
+from scipy import ndimage as ndi
 """1. Intuición e interpretación (Transformada general)
 La siguiente es una función que puede utilizar en este punto para generar sus datos para este
 punto:
@@ -400,7 +401,7 @@ Grafique el brillo de la estrella en función de 𝜙, guarde en  4.pdf ."""
 
 Datos=pd.read_csv('Taller 2/OGLE-LMC-CEP-0001.dat', sep=" ", header=None)
 Datos.columns=["Tiempo", "Brillo", "Delta brillo"]
-Datos
+#print(Datos.head())
 
 plt.scatter(Datos["Tiempo"], Datos["Brillo"], color="teal")
 
@@ -491,11 +492,8 @@ craneal. Use el número de su grupo. Si por algún motivo algún miembro de su g
 sensibilidad a las imágenes anatómicas, use a  skelly.npy
 Guarde la imagen filtrada resultante en  4.png .
 """
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy import ndimage as ndi
-
 # Filtro pasa altas
+
 def filtro_pasa_altas(signal):
     N = len(signal)
     freqs = np.fft.fftfreq(N)
@@ -503,7 +501,7 @@ def filtro_pasa_altas(signal):
     F = np.fft.fft(signal)
     return np.real(np.fft.ifft(F * H))
 
-def reconstruccion(file="11.npy", rows=356):
+def reconstruccion(file, rows=356):
     # Cargar TODAS las proyecciones: matriz (n_angulos, n_pixeles)
     proyecciones = np.load(file)  
     n_angulos, n_pixeles = proyecciones.shape
@@ -525,7 +523,7 @@ def reconstruccion(file="11.npy", rows=356):
         suma += proy_rotada
 
     return suma
-imagen = reconstruccion("11.npy", rows=356)
+imagen = reconstruccion("Taller 2\tomografia\tomography_data\11.npy",rows=356)
 plt.imshow(imagen, cmap="gray")
 plt.axis("off")
 plt.savefig("4.png", bbox_inches="tight")
