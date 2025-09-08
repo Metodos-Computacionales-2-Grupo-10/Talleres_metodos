@@ -136,13 +136,13 @@ for i in range (1,6):
   frecuencias=np.linspace(1,3,5000)
   fourier=Fourier_transfrom(dat[0], dat[1], frecuencias)
   plt.plot(frecuencias,np.abs(fourier), color=colors[i-1], label=f"Duración: {duracion[i-1]} s")
-  plt.title("Transformada de Fourier para diferentes ventanas de tiempo")
-  plt.xlabel("Frecuencia")
-  plt.ylabel("Amplitud")
-  plt.legend()
-  plt.xlim(1.95,2.05)
-  plt.savefig("Taller 2/Resultados/1.c.pdf")
-  plt.close()
+plt.title("Transformada de Fourier para diferentes ventanas de tiempo")
+plt.xlabel("Frecuencia")
+plt.ylabel("Amplitud")
+plt.legend()
+plt.xlim(1.95,2.05)
+plt.savefig("Taller 2/Resultados/1.c.pdf")
+plt.close()
 # Se demuestra el principio de incertidumbre de ondas, ya que una mayor ventana de tiempo menor el ancho y mayor la intensidad de la frecuencia
 # pero se pierden cambios o variaciones temporales de la señal.
 # El paso al que tomo datos afecta directamente el ancho y la forma de los picos ya que si hace que haya muy pocos datos en al ventana de tiempo, hara que la transformada
