@@ -1,0 +1,512 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy as sci
+import datetime
+import pandas as pd
+from scipy.signal import find_peaks
+from numba import njit
+from PIL import Image
+import scipy.optimize as opt
+from scipy import ndimage as ndi
+"""1. Intuición e interpretación (Transformada general)
+La siguiente es una función que puede utilizar en este punto para generar sus datos para este
+punto:
+def generate_data(tmax,dt,A,freq,noise):
+    '''Generates a sin wave of the given amplitude (A) and frequency (freq),
+    sampled at times going from t=0 to t=tmax, taking data each dt units of time.
+    A random number with the given standard deviation (noise) is added to each data point.
+    ----------------
+    Returns an array with the times and the measurements of the signal. '''
+    ts = np.arange(0,tmax+dt,dt)
+    return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
+Para todo este punto se necesitará la función que se pide escribir en la Sección 1.a"""
+
+def generate_data(tmax,dt,A,freq,noise):
+ ts = np.arange(0,tmax+dt,dt)
+ return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
+
+datos_ruido=generate_data(15,0.13,5,1.5,0.7)
+plt.figure(figsize=(15,5))
+plt.scatter(datos_ruido[0],datos_ruido[1], color="orange")
+plt.title("Datos con ruido")
+plt.xlabel("Tiempo")
+plt.ylabel("Amplitud")
+
+"""1.a Limite de Nyquist """
+"""1.a.a. Implementación
+Escriba una función que, dados unos arrays de tiempo (𝑡), de medición de la señal (𝑦), y de
+frecuencias (𝑓), calcule la transformada en dichas frecuencias.
+La definición puede ser:
+𝐹𝑘=∑
+𝑁
+𝑖=1
+𝑦𝑖𝑒−2𝜋𝕚𝑓𝑘𝑡𝑖
+donde 𝑁 es la longitud de los datos. NOTA: el array de frecuencias no necesariamente es del
+mismo tamaño que los datos.
+La función debe llamarse  Fourier_transform ."""
+
+def Fourier_transfrom(t,y,f):
+  T=[]
+  for i in range(len(f)):
+    transformados=(y*(np.exp((-1*2*np.pi*f[i]*t)*1j))).sum()
+    T.append(transformados)
+  return np.array(T)
+
+"""1.a.b. Prueba
+Genere una señal con la función proporcionada arriba, y grafique su espectro calculado hasta
+2.7 veces la frecuencua de Nyquist. Guarde como  1.a.pdf"""
+
+dt = datos_ruido[0][1] - datos_ruido[0][0]  # paso temporal
+fs = 1 / dt                                # frecuencia de muestreo
+niquist = fs / 2 
+frecuencias=np.linspace(0,niquist*2.7,400)
+F=Fourier_transfrom(datos_ruido[0], datos_ruido[1], frecuencias)
+plt.plot(frecuencias,np.abs(F), color="teal")
+plt.title("Transformada de Fourier")
+plt.xlabel("Frecuencia")
+plt.ylabel("Amplitud")
+plt.axvline(x=niquist,color='yellowgreen')
+plt.axvline(x=niquist*2,color='orange')
+plt.savefig("Taller 2/Resultados/1.a.pdf")
+plt.close()
+"""1.b. Signal-to-noise
+La razón señal-a-ruido (SN) se define como la amplitud del fenómeno que nos importa (signal)
+sobre una medida del ruido del fondo (noise), como lo puede ser la desviación estándar.
+Con la función de arriba podemos generar una señal con el SNtime que queramos, porque sería
+igual a  A/freq .
+En el dominio de frecuencias, se mide el SNfreq como la altura del pico principal de la señal
+dividida sobre la desviación estándar de la parte del espectro que no tiene picos.
+Genere muchos conjuntos de datos, cada uno SNtime diferente (puede ser logarítmicamente
+distribuídos  de  0.01  a  1.0)  y  calcule  las  SN  de  cada  uno  de  esos  datos  pero  en  espacio  de
+frecuencias. Grafique SNfreq vs SNtime.
+Encuentre algún modelo para lo que observa. Posiblemente se vea mejor en log-log.
+Para pensar: ¿qué variables harían cambiar este comportamiento? ( A ,  tmax ,  freq ,  dt , ...)"""
+
+n=0.01
+DATOS=[]
+SNfrec=[]
+SNtime=[]
+maximos=[]
+for i in range(100):
+  datos=generate_data(50,0.1,n*(i+1),2, 0.5)
+  nik=((50/0.1)/50)/2
+  frec=np.linspace(0.1,nik,200)
+  F=Fourier_transfrom(datos[0], datos[1], frec)
+  maxim=max(np.abs(F))
+  desv=F[abs(frec)<1.8].std()
+  SN=maxim*desv
+  DATOS.append(datos)
+  SNfrec.append((n*(i+1))/2)
+  SNtime.append(SN)
+
+def cuadratica (x, a, b,c):
+  return a*np.array(x)**2+b*np.array(x)+c
+
+params, cov=opt.curve_fit(cuadratica, SNfrec, SNtime)
+plt.plot(SNfrec,SNtime, color="maroon")
+plt.plot(SNfrec, cuadratica(SNfrec, *params), color="coral", linestyle="--", label="Ajuste cuadrático")
+plt.legend()
+plt.title("Comparación entre radio SN calculado y establecido en la generación de datos", fontsize=9)
+plt.suptitle("Relación entre señal y ruido (SN)")
+plt.xlabel("SN base")
+plt.ylabel("SN calculada")
+plt.yscale("log")
+plt.xscale("log")
+plt.savefig("Taller 2/Resultados/1.b.pdf")
+plt.close()
+#Variables que hacen cambiar la grafica anterior:
+# 1. Ruido, un menor ruido hace que haya menor dispercion de los datos y que el ajuste cuadratico se acople mas a los datos
+#    Puede no variar la cantidad de oscilaciones pero si su amplitud (es mucho menor si se reduce noice)
+# 2. dt, Reducir este valor causa un aplanamiento de la grafica por lo que menos datos hecen un peor ajuste
+#    Se puede llegar a un punto critico en el que tan pocos datos hacen que los valores tengan picos infinitesimalemente pequeños sin permiter comparación
+# 3. Frecuencia, una frecuencia diferente puede afectar la curva si esta abajo del limite 1.8 dede el cul se toma la desviación estandar
+#    Asimismo, un aumento exesivo de la frecuencia causaria que la curva se estabilizara pasado cierto punto osilando en un intervalo "pequeño" de valores altos (10^3)
+# 4. tmax, al tomar una ventana tan grande de tiempo la señal se hace mucho mas fuerte en comparacion  al ruido haciendo que la comparación entre SNs se estabilice.
+
+"""1.c. Principio de indeterminación de las ondas
+Usando  la  función  para  generar  datos,  muestre  cómo  cambia  el  ancho  de  los  picos  de  la
+transformada en función de  tmax .
+Para pensar: ¿esto cambia si muevo alguna de las otras variables?"""
+
+colors = ["red", "orange", "yellowgreen", "teal", "purple"]
+duracion = [50, 100, 150, 200, 250]
+for i in range (1,6):
+  dat=generate_data(50*i,0.1,50, 2,0.7)
+  niquist2=((50*i/0.1)/20)/2
+  frecuencias=np.linspace(1,3,5000)
+  fourier=Fourier_transfrom(dat[0], dat[1], frecuencias)
+  plt.plot(frecuencias,np.abs(fourier), color=colors[i-1], label=f"Duración: {duracion[i-1]} s")
+plt.title("Transformada de Fourier para diferentes ventanas de tiempo")
+plt.xlabel("Frecuencia")
+plt.ylabel("Amplitud")
+plt.legend()
+plt.xlim(1.95,2.05)
+plt.savefig("Taller 2/Resultados/1.c.pdf")
+plt.close()
+# Se demuestra el principio de incertidumbre de ondas, ya que una mayor ventana de tiempo menor el ancho y mayor la intensidad de la frecuencia
+# pero se pierden cambios o variaciones temporales de la señal.
+# El paso al que tomo datos afecta directamente el ancho y la forma de los picos ya que si hace que haya muy pocos datos en al ventana de tiempo, hara que la transformada
+# resultante no tenga un pico tan claro.
+
+"""1.d. (BONO) Más allá de Nyquist
+Modificque  la  función  generate_data   para  que  acepte  un  argumento  opcional  llamado
+sampling_noise  que meta ruido a los tiempos de muestreo de la señal  ts  antes de que se
+mida la señal, y retorne la señal medida en esos nuevos tiempos “perturbados”.
+Grafique  la  transformada  hasta  2.7  veces  la  frecuencia  de  Nyquist,  para  varios
+sampling_noise .
+Dependiendo de qué tan grande sea ese ruido de muestreo, los picos repetidos de la transfor-
+mada deberían irse eliminando, quedando la frecuencia real, incluso si ésta es mayor que la
+de Nyquist.
+En bloque neón hay una muestra de cómo podría quedar esta gráfica."""
+# BONO
+def generate_data2(tmax,dt,A,freq,noise,sampling_noise=0):
+  n=np.zeros(len(np.arange(0,tmax+dt,dt)))
+  s_noise=np.random.normal(loc=n,scale=sampling_noise)
+  ts = np.arange(0,tmax+dt,dt)
+  ts+=s_noise
+  return ts, np.random.normal(loc=A*np.sin(2*np.pi*ts*freq),scale=noise)
+
+plt.figure(figsize=(15,5))
+colors2=["maroon", "orangered", "gold", "yellowgreen", "darkcyan" ]
+for i in range(0,5):
+  tiempo, A=generate_data2(30,0.1,5,2,0.5,i*0.01)
+  NI=((30/0.1)/30)/2
+  frecuencias=np.linspace(0,NI*2.7,400)
+  fourier2=Fourier_transfrom(tiempo, A, frecuencias)
+  plt.plot(frecuencias,np.abs(fourier2), label=f"Sampling noise: {i*0.01}", color=colors2[i])
+  plt.axvline(x=NI,color='gray')
+  plt.axvline(x=NI*2,color='grey')
+  plt.title("Transformada de Fourier para diferentes ruido de muestreo")
+  plt.xlabel("Frecuencia")
+  plt.ylabel("Amplitud")
+  plt.legend()
+  plt.savefig("Taller 2/Resultados/Bono_1.pdf")
+plt.close()
+
+"""2. Ciclos de actividad solar (FFT 1D)
+Adjuntos encontrará unos datos  SN_d_tot_V2.0.csv  que corresponden al registro histórico
+más  extenso  de  manchas  solares  que  pude  conseguir.  Tanto  los  datos  como  su  descripción
+están  disponibles  públicamente  desde  el  Observatorio  Real  de  Bélgica,  pero  con  el  archivo
+adjunto basta."""
+###Carga datos
+datos_2=pd.read_csv("Taller 2/SN_d_tot_V2.0.csv")
+datos_2['fecha'] = pd.to_datetime(datos_2[['year', 'month', 'day']])
+#datos_2.info()
+#print(datos_2.head())
+
+"""2.a. Arreglar
+Importe los datos. Notará que antes de 1850 hay algunos días que tienen −1 manchas. Esto
+claramente quiere decir que no se tomaron datos (NO quiere decir que no hayan manchas).
+Use algún método que no sea de Fourier para reemplazar estos valores faltantes.
+Para pensar: ¿por qué no puede simplemente quitarlos?"""
+###Inicialmente pensamos borrarla porque solo implicaba un 4% de datos, pero esto podria generar problemas en Fourier. 
+# Por ejemplo, no sabemos aun si alteraria la frecuencia de muestreo y esto podria alterar la obtencion de algunas frecuencias.
+datos_2['spots'] = datos_2['spots'].replace(-1, np.nan)
+datos_2['spots'] = datos_2['spots'].interpolate(method='linear', limit_direction='both')
+#Remplazo -1 por Nan e interpolo en ambos sentidos
+"""2.b. Filtrado y análisis
+• Obtenga el período del ciclo solar en días.
+‣ BONO: use el truco descrito en clase para encontrar el período con aún más precisión.
+‣ En cualquier caso, guarde este número como texto en un archivo llamado  2.b.txt
+• Diseñe un filtro pasa bajas para capturar el comportamiento general de los datos, sin tanto
+ruido.
+‣ Puede ponerse creativo con la función de filtro.
+‣ Grafique los datos antes y después de filtrar en  2.b.data.pdf .
+• Halle los máximos locales de la señal filtrada, que debería ser una curva suave.
+‣ Grafique el número de manchas solares en el máximo contra la fecha en la que ocurre el
+máximo en  2.b.maxima.pdf .
+‣ Se baja si se considera el año como variable categórica.
+Para pensar: ¿qué tanto se puede filtrar la señal?
+"""
+# FFT con zero padding
+N_total = len(datos_2['spots']) + 1000
+t_fourier = np.fft.fft(datos_2['spots'], n=N_total)
+frecuencias = np.fft.fftfreq(N_total, d=1)
+
+# hallando el periodo
+freq_pos = frecuencias[:N_total//2] #N_total//2 es freq_nyquist
+fft_pos  = np.abs(t_fourier[:N_total//2])
+
+frecuencia_principal = freq_pos[np.argmax(fft_pos[1:])]
+Periodo_ciclo_solar = 1/frecuencia_principal
+
+###print("Frecuencia principal:", frecuencia_principal)
+###print("Periodo del ciclo solar:", Periodo_ciclo_solar)
+
+with open("Taller 2/Resultados/2.b.txt","w") as file:
+    file.write("Periodo del ciclo Solar: "+str(Periodo_ciclo_solar)+" dias")
+
+# Filtro pasa bajas
+filtro = np.exp(-(frecuencias*1000)**2) #si a muy grande es una linea recta, si muy pequeno mucho ruido
+espectro_filtrado = t_fourier * filtro
+filtro_2 = np.where(np.abs(frecuencias) < 0.001, 1, 0) #si a muy grande  mucho ruido, si a muy pequena se aplana
+x2 = t_fourier * filtro_2
+
+# IFFT (tomar solo la parte real y recortar al tamaño original)
+senal_filtrada = np.fft.ifft(espectro_filtrado).real
+senal_filtrada = 1.8*senal_filtrada[:len(datos_2['spots'])]
+senal_filtrada2 = np.fft.ifft(x2).real
+senal_filtrada2 = 1.8*senal_filtrada2[:len(datos_2['spots'])]
+#Gráficando
+plt.figure(figsize=(10,5))
+plt.plot(datos_2['fecha'], senal_filtrada2, label='Señal Filtrada Threshold',color='black')
+##Se multiplico * por un valor para que los picos tuvieran mayor amplitud y coincidieran con la grafica. Inicialmente tenian aprox la mitad de altura
+plt.plot(datos_2['fecha'],senal_filtrada, label="Señal Filtrada Gaussiana",color='r')
+plt.scatter(datos_2['fecha'], datos_2['spots'], s=10, label="Datos Originales")
+plt.xlabel("Día")
+plt.ylabel("Conteo Manchas")
+plt.title("Manchas Solares en el tiempo")
+plt.legend()
+plt.grid()
+plt.tight_layout()
+plt.savefig("Taller 2/Resultados/2b data.pdf", bbox_inches="tight", pad_inches=0.1)
+###print("Gráfica guardada como 'Taller 2/2b data.pdf'")
+plt.close()
+###enccontrando picos. Se uso la segunda senal ya que no tiene picos 'dobles)
+altura_minima = 0.2 * np.max(senal_filtrada2)
+picos, _ = find_peaks(senal_filtrada2, prominence=altura_minima)
+###print(picos)
+plt.plot(datos_2['fecha'][picos], senal_filtrada2[picos])
+plt.xlabel("Día")
+plt.ylabel("Conteo Manchas")
+plt.title("Maximos de Manchas Solares")
+plt.grid()
+plt.tight_layout()
+plt.savefig("Taller 2/Resultados/2b.maxima.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.close()
+###print("Gráfica guardada como 'Taller 2/2b.maxima.pdf'")
+"""3. Filtrando imágenes (FFT 2D)"""
+"""3.a. Desenfoque
+Adjunta encontrará una foto del gato Miette. Multiplique la transformada 2D con una imagen
+del mismo tamaño de una gaussiana para obtener una versión desenfocada de la imagen. Debe
+hacer esto para cada canal de color de la imagen.
+Se recomienda abrir la imagen con  np.array(PIL.Image.open(...)) . Se recomienda tratar
+la transformada de la imagen con  fftshift .
+Guarde la imagen borrosa como  3.a.jpg ."""
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+
+
+miette = np.array(Image.open("Taller 2/Miette.jpg"))
+miette_borrosa = np.zeros_like(miette, dtype=float)#Creo la base
+rows, cols = miette.shape[0], miette.shape[1]
+X, Y = np.meshgrid(np.arange(cols), np.arange(rows))
+# Centro de la imagen
+cx, cy = cols // 2, rows // 2
+
+sigma = 50 # más grande = más desenfoque
+
+# Gaussiana centrada ***Correccion de Chat gpt al restar cx y cy
+gaussiana = np.exp(-((X-cx)**2 + (Y-cy)**2) / (2*sigma**2))
+gaussiana = gaussiana / np.max(gaussiana)
+
+for c in range(3):
+    canal = miette[:,:,c] #c es cada canal Rojo, Verde o Azul
+    canal_f = np.fft.fft2(canal)
+    canal_f = np.fft.fftshift(canal_f)
+    canal_filt = canal_f * gaussiana #aplicamos filtro
+    canal_filt = np.fft.ifftshift(canal_filt)
+    canal_b = np.fft.ifft2(canal_filt).real
+    miette_borrosa[:,:,c] = canal_b
+
+# Ajustar valores y guardar **recomendacion chat GPT plt.imsave no sirvio
+miette_borrosa = np.clip(miette_borrosa, 0, 255).astype(np.uint8)
+Image.fromarray(miette_borrosa).save("Taller 2/Resultados/3.a.jpg")
+
+"""3.b. Ruido periódico"""
+"""3.b.a. P_a_t_o
+Adjunta también encontrará la imagen de un pato, en blanco y negro esta vez. Esta imagen
+presenta ruido periódico, que puede evidenciar por los picos en la transformada bidimensional.
+Elimine estos picos manualmente, poniendo ceros en el array donde están los picos. Realice
+la  transformada  inversa  para  obtener  la  imagen  sin  ruido  periódico.  Guarde  la  imagen  en
+3.b.a.jpg
+Para pensar: en vez de ceros, ¿se le ocurre alguna manera mejor de quitar estos picos?
+"""
+pato=np.array(Image.open("Taller 2/p_a_t_o.jpg"))
+pato_fft = np.fft.fftshift(np.fft.fft2(pato))
+from matplotlib.colors import LogNorm
+###VISUALIZACION FOURIER
+#plt.imshow(np.abs(pato_fft), norm=LogNorm(), cmap="gray")
+#plt.show()
+pato_filtrado=pato_fft.copy()
+#puntos que saque a ojo
+pato_filtrado[240,256]=0.
+pato_filtrado[251,251]=0.
+pato_filtrado[261,261]=0.
+pato_filtrado[272,256]=0.
+pato_filtrado[256,272]=0.
+pato_filtrado[256,240]=0.
+pato_filtrado[272,256]=0.
+pato_filtrado[240,256]=0.
+
+##me canse buscando la perfeccion asi que arriesgue calidad  con esta
+##chambonada de cortes
+###VERTICALES
+pato_filtrado[0:250, 250:260] = 0.  
+pato_filtrado[270:500, 250:260] = 0.
+##horizontales
+pato_filtrado[250:260, 0:250] = 0.
+pato_filtrado[250:260, 270:500] = 0.
+###plt.imshow(np.abs(pato_filtrado), norm=LogNorm(), cmap="gray")
+###plt.show()
+pato_limpio= np.fft.ifft2(np.fft.ifftshift(pato_filtrado))
+###VISUALIZACION LIMPIA
+###plt.imshow(pato_limpio.real, cmap="gray")
+###plt.show()
+plt.imsave("Taller 2/Resultados/3.b.a.jpg", pato_limpio.real,cmap="gray")
+
+"""3.b.b. G_a_t_o
+Haga  lo  mismo  con  la  imagen  del  gato  que  parece  que  estuviera  detrás  de  unas  persianas
+medio abiertas. Guarde en  3.b.b.png
+Para pensar: ¿se le ocurre alguna manera de detectar estos picos automáticamente?
+"""
+gato=np.array(Image.open("Taller 2/g_a_t_o.png"))
+gato_fft = np.fft.fftshift(np.fft.fft2(gato))
+gato_filtrado=gato_fft.copy()
+###VISUALIZACION FOURIER
+#plt.imshow(np.abs(gato_fft), norm=LogNorm(), cmap="gray")
+#plt.show()
+##Para la diagonal hay que hacer un proceso 
+m = (159-578)/(255-486)  # pendiente a ojo
+b = -300                # intercepto a ojo 
+alto, ancho = gato_filtrado.shape[:2]
+x = np.arange(800)       # todos los píxeles de ancho
+y = (m*x + b).astype(int)
+
+for i in range(len(x)):
+    if 0 <= y[i] < 800:  # asegurar que no se salga del rango
+        y_min = max(0, y[i]-10)
+        y_max = min(alto, y[i]+10)
+        gato_filtrado[y_min:y_max, x[i]] = 0
+#plt.imshow(np.abs(gato_filtrado), norm=LogNorm(), cmap="gray")
+#plt.show()
+gato_limpio= np.fft.ifft2(np.fft.ifftshift(gato_filtrado))
+###VISUALIZACION LIMPIA
+#plt.imshow(gato_limpio.real, cmap="gray")
+#plt.show()
+plt.imsave("Taller 2/Resultados/3.b.b.jpg", gato_limpio.real,cmap="gray")
+
+"""4. Aplicación real: datos con muestreo aleatorio
+El archivo de datos  OGLE-LMC-CEP-0001.dat  contiene tres columnas: tiempo, brillo, e incer-
+tidumbre en el brillo de una estrella. El tiempo está dado en el número fraccionario de días
+desde el 9 de Octubre de 1995, por alguna razón.
+Los datos fueron tomados en Las Campanas, Chile, y tienen un muestreo de más o menos cada
+noche. A veces se toman varios datos la misma noche, a veces hay varias noches sin datos, y
+se toman a horas ligeramente distintas.
+Para pensar: ¿podríamos decir que la frecuencia de muestreo es de 1 por día?
+Encuentre la frecuencia de la señal.
+Para  comprobar  que  sea  esta  realmente  la  frecuencia  de  la  señal,  calcule  la  fase
+φ = np.mod(f*t,1) , donde 𝑓 es la frecuencia de la señal y 𝑡 es la columna de tiempo.
+Grafique el brillo de la estrella en función de 𝜙, guarde en  4.pdf ."""
+
+Datos=pd.read_csv('Taller 2/OGLE-LMC-CEP-0001.dat', sep=" ", header=None)
+Datos.columns=["Tiempo", "Brillo", "Delta brillo"]
+Datos
+
+plt.scatter(Datos["Tiempo"], Datos["Brillo"], color="teal")
+
+def Fourier_transform(t,y,f):
+  T=[]
+  for i in range(len(f)):
+    transformados=(y*(np.exp((-1*2*np.pi*f[i]*t)*1j))).sum()
+    T.append(transformados)
+  return np.array(T)
+
+t = Datos["Tiempo"].to_numpy(dtype=float)
+y = Datos["Brillo"].to_numpy(dtype=float)
+
+# Centrar datos ---
+y_centrada = y - np.mean(y)
+
+# Rango de frecuencias a explorar 
+frecuencias = np.linspace(0, 8, 40000)  # alta resolución
+transformada = Fourier_transform(t, y_centrada, frecuencias)
+amplitud = np.abs(transformada)
+
+# Encontrar pico de la transformada 
+pico_idx = np.argmax(amplitud)
+f_true = frecuencias[pico_idx]
+
+# Calcular fase
+phi = np.mod(f_true * t, 1.0)
+
+# Graficar brillo vs fase 
+plt.figure(figsize=(8, 5))
+plt.scatter(phi, y_centrada, color="orange", s=12)
+plt.xlabel("ϕ (fase)")
+plt.ylabel("Brillo centrado")
+plt.title("Brillo en función de la fase ϕ")
+
+
+plt.savefig("Taller 2/Resultados/4.pdf", format="pdf")
+
+
+"""5. Aplicación real: Reconstrucción tomográfica filtrada
+En bloque neón hay un video que muestra en resumen cómo funciona una tomografía. Mire
+el video antes de continuar.
+• Para cada ángulo, se toma una imagen 1D de los rayos X atravesando la parte del cuerpo
+que se quiere observar.
+‣ El resultado es la una suma de intensidades para ese ángulo, una señal 1D.
+• Se hace esto para muchos ángulos y se guardan las proyecciones.
+• Luego, cada imagen 1D se convierte en una imagen 2D repitiendo los datos hacia abajo.
+‣ La imagen resultante se rota, como se muestra en la figura
+• Se suman todas estas imágenes, y así se logra una reconstrucción aproximada de la imagen
+original.
+Pero  esta  imagen  es  muy  borrosa,  no  se  distinguen  los  detalles.  Para  mejorar  los  detalles,
+diseñe un filtro pasa altas y aplíquelo a cada una de las proyecciones (señales 1D) antes de la
+suma. Esto producirá algunos artefactos en la imagen, pero mejorará el contraste:
+Pista: si tiene la señal 1D en el array  signal , para formar la imagen ya rotada puede servirse
+del siguiente código:
+from scipy import ndimage as ndi
+imagen_rotada = ndi.rotate(
+    np.tile(signal[:,None],rows).T,
+    rotation_angle,
+    reshape=False,
+    mode="reflect"
+)
+Donde  rotation_angle   es  el  ángulo  de  rotación  en  grados,  rows   es  el  número  de  filas
+(pixeles en y) de la imagen resultante, y los demás argumentos se encargan de conservar el
+brillo.
+Encontrará una carpeta con muchos conjuntos de datos de proyecciones de una tomografía
+craneal. Use el número de su grupo. Si por algún motivo algún miembro de su grupo tienen
+sensibilidad a las imágenes anatómicas, use a  skelly.npy
+Guarde la imagen filtrada resultante en  4.png .
+"""
+# Filtro pasa altas
+
+def filtro_pasa_altas(signal):
+    N = len(signal)
+    freqs = np.fft.fftfreq(N)
+    H = np.abs(freqs)   # Ram-Lak
+    F = np.fft.fft(signal)
+    return np.real(np.fft.ifft(F * H))
+
+def reconstruccion(file, rows=356):
+    # Cargar TODAS las proyecciones: matriz (n_angulos, n_pixeles)
+    proyecciones = np.load(file)  
+    n_angulos, n_pixeles = proyecciones.shape
+
+    suma = np.zeros((rows, rows))
+
+    for i in range(n_angulos):
+        signal = proyecciones[i, :]   # proyección individual
+        signal_f = filtro_pasa_altas(signal)
+
+        # Expandir a 2D
+        proy = np.tile(signal_f[:, None], rows).T  
+
+        # Ángulo de esta proyección
+        angulo = i * 180 / n_angulos
+
+        # Rotar e ir sumando
+        proy_rotada = ndi.rotate(proy, angulo, reshape=False, mode="reflect")
+        suma += proy_rotada
+
+    return suma
+imagen = reconstruccion("Taller 2/tomography_data/11.npy",rows=356)
+plt.imshow(imagen, cmap="gray")
+plt.axis("off")
+plt.savefig("Taller 2/Resultados/4.png", bbox_inches="tight")
+
+
