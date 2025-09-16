@@ -116,7 +116,7 @@ plt.savefig("Taller 3/1c.pdf", bbox_inches="tight", pad_inches=0.1)
 plt.close(fig)
 
 """2. Balistica"""
-# Constantes
+# Constantes del ejercicio
 m = 10.01  # kg
 A = 1.642
 B = 40.624
@@ -125,7 +125,7 @@ g = 9.7732  # m/s^2
 v_0 = np.linspace(0, 140, 100)  
 angulos = np.linspace(10, 80, 100)  
 
-#Coeficiente de fricción
+#Coeficiente de fricción DADO EN EL ENUNCIADO
 def beta(y):
     return A * (1 - y / B) ** C
 
@@ -141,8 +141,8 @@ def modelo(t, estado):
 # Evento donde acaba la simulación (cuando y=0), aca me ayudo chat y la guia de santiago con .terminal y .direction
 def hit_ground(t, estado):
     return estado[1]
-hit_ground.terminal = True
-hit_ground.direction = -1
+hit_ground.terminal = True #detiene la integración
+hit_ground.direction = -1 #solo toma direccion de bajada
 
 alcances = []
 thetas_xmax = []
@@ -168,7 +168,7 @@ for vel in v_0:
     alcances.append(x_max)
     thetas_xmax.append(theta_max)
     plt.scatter(vel, x_max, color='blue')
-    #plt.scatter(vel, theta_max, color='red')
+    #plt.scatter(vel, theta_max, color='red') #esto es para ver el angulo maximo pero no me lo pidieron
 plt.xlabel('Velocidad inicial (m/s)')
 plt.ylabel('Alcance máximo (m)')
 plt.title('Alcance máximo vs Velocidad inicial')
@@ -438,3 +438,77 @@ np.savetxt(
     fmt=["%d", "%.6f", "%.6f", "%.3f"],
     delimiter="\t"
 )
+
+
+""""7 (0.75pt) Perfil de densidad estelar"""
+
+import csv
+
+# -------------------------------
+# Configuración
+x0 = 1e-6      # inicio (evita singularidad en 0)
+max_step = 0.01
+rtol = 1e-12
+atol = 1e-14
+
+# Lista de índices politrópicos
+n_list = [0.0, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0]
+
+# -------------------------------
+# Definiciones
+def lane_emden_rhs(x, y, n):
+    """EDO de Lane-Emden en forma de sistema de primer orden"""
+    theta, dtheta = y
+    ddtheta = - (2.0 / x) * dtheta - theta**n
+    return [dtheta, ddtheta]
+
+def theta_series(x):
+    """Expansión en serie cerca de x=0"""
+    return 1.0 - x**2 / 6.0, -x / 3.0
+
+def solve_lane_emden(n, xmax=20000):
+    """Resuelve Lane-Emden para un índice polytropico n"""
+    th0, dth0 = theta_series(x0)
+    y0 = [th0, dth0]
+
+    def event_theta_zero(x, y):
+        return y[0]
+    event_theta_zero.terminal = True
+    event_theta_zero.direction = -1
+
+    sol = solve_ivp(lambda x, y: lane_emden_rhs(x, y, n),
+                    (x0, xmax), y0,
+                    events=event_theta_zero,
+                    max_step=max_step,
+                    rtol=rtol, atol=atol)
+
+    if sol.t_events[0].size > 0:
+        x_star = float(sol.t_events[0][0])
+        dtheta_at_root = float(sol.y_events[0][0][1])
+        M_prop = - (x_star**2) * dtheta_at_root
+        rho_ratio = - (1.0 / 3.0) * (x_star / dtheta_at_root)
+        return x_star, M_prop, rho_ratio
+    else:
+        return np.nan, np.nan, np.nan
+
+# -------------------------------
+# Cálculos
+results = []
+for n in n_list:
+    if n == 5.0:
+        # caso especial: radio infinito
+        results.append([n, np.nan, np.nan, np.nan])
+    else:
+        x_star, M_prop, rho_ratio = solve_lane_emden(n)
+        results.append([n, x_star, M_prop, rho_ratio])
+        #print(f"n={n}  x*={x_star:.6g}  M~{M_prop:.6g}  rho_c/<rho>={rho_ratio:.6g}")
+
+# -------------------------------
+# Guardar CSV
+with open("Taller 3/7.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["n", "x_star", "M_proportional", "rho_c_over_rho_avg"])
+    for row in results:
+        writer.writerow(row)
+
+#print("\nTabla exportada como 7.csv ✅")
