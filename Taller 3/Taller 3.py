@@ -75,7 +75,7 @@ def angle_to_hit_target(v0, target_x, target_y):
         angulo_resultado = []
         sol_hit = None
         angulos = np.linspace(10, 80, 100)  # en grados
-        tolerancia = 0.01 # margen de error
+        tolerancia = 0.1 # margen de error
         for angulo in angulos:
             angulo_rad = np.deg2rad(angulo)
             estado_inicial = [0, 0,
@@ -90,16 +90,17 @@ def angle_to_hit_target(v0, target_x, target_y):
             trayectoria_y = sol.y[1]
             ###No pude resolver para un punto especifico, pues se necesita muchos puntos
             ###entonces lo que hice fue buscar si en la trayectoria hay un punto entre pos_objetivo-tolerancia y pos_objetivo+tolerancia
-            if np.any((trayectoria_x <= target_x + tolerancia) & (trayectoria_x >= target_x - tolerancia)) and np.any((trayectoria_y <= target_y + tolerancia) & (trayectoria_y >= target_y - tolerancia)):
+            #####Correccion (tomaba trayectorias que no llegaban al target) chat me recomendo hacerlo asi
+            distancias = np.sqrt((trayectoria_x - target_x)**2 + (trayectoria_y - target_y)**2)
+
+            if np.any(distancias < tolerancia):
                 angulo_resultado.append(angulo)
                 sol_hit = sol
-                #plt.plot(trayectoria_x, trayectoria_y, label=f'Trayectoria ángulo {angulo}°')
+                #plt.plot(trayectoria_x, trayectoria_y, label=f'Trayectoria ángulo {angulo:.2f}°')
     else:
-        #print("Objetivo fuera del espacio")
         return None, None, None
 
     if sol_hit is None:
-        #print("No se encontró ningún ángulo que alcance el objetivo con esa velocidad.")
         return None, None, None
     #plt.scatter(target_x, target_y, label='Target', color='r')
     #plt.legend()
