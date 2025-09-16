@@ -119,8 +119,8 @@ def punto_1b():
     axes[1].set_xlabel("t"); axes[1].set_ylabel("y")
 
     axes[2].plot(t, Pi_y)
-    axes[2].set_title("1.b Momento conjugado $\Pi_y$(t)")
-    axes[2].set_xlabel("t"); axes[2].set_ylabel("$\Pi_y$")
+    axes[2].set_title("1.b Momento conjugado ")
+    axes[2].set_xlabel("t"); axes[2].set_ylabel("")
 
     axes[3].plot(t, E)
     axes[3].set_title("1.b Energía total E(t)")
@@ -138,7 +138,7 @@ def punto_1b():
 # ============================================================
 
 def velocity_verlet_two_body(r1, v1, r2, v2, m=1.0, G=1.0, dt=1e-3, nsteps=10000):
-    """Integra dos cuerpos con interacción gravitacional 1/r con Velocity-Verlet."""
+    #Integra dos cuerpos con interacción gravitacional 1/r con Velocity-Verlet.
     r1 = r1.astype(float).copy()
     r2 = r2.astype(float).copy()
     v1 = v1.astype(float).copy()
