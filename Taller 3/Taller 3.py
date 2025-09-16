@@ -512,3 +512,42 @@ with open("Taller 3/7.csv", "w", newline="") as f:
         writer.writerow(row)
 
 #print("\nTabla exportada como 7.csv ✅")
+
+"""5 (0.75pt) Circuito genético oscilatorio"""
+def F(t,y,a,b):
+  m1, m2,m3, p1, p2, p3=y
+  return np.array([
+      (a/(1+p3**2)+a/1000-m1),
+      (a/(1+p1**2)+a/1000-m2),
+      (a/(1+p2**2)+a/1000-m3),
+      -b*(p1-m1),
+      -b*(p2-m2),
+      -b*(p3-m3)
+  ])
+alphas=np.logspace(0, 5, 50)
+betas=np.logspace(0, 2, 50)
+def evento (t,y,a,b):
+  m1, m2,m3, p1, p2, p3=y
+  return -b*(p3-m3)+1e-8
+evento.terminal=22
+def respuesta (alphas, betas):
+    A = np.zeros((len(alphas), len(betas)))
+    for i in range(len(alphas)):
+      for j in range(len(betas)):
+        tv=np.linspace(0,400,700)
+        sol=solve_ivp(fun=F, t_span=(0,400), y0=[0.01,0.02,0.03,0.004,0.05, 0.],t_eval=tv,events=evento, args=(alphas[i], betas[j]))
+        amplitud=(np.max(sol.y[5][int(len(sol.t)*0.9):])-np.min(sol.y[5][int(len(sol.t)*0.9):]))/2
+        A[i,j]=np.log10(amplitud+1e-8)
+    return A
+
+Amp=respuesta(alphas, betas)
+X, Y = np.meshgrid(alphas,betas)
+
+pcm = plt.contourf(X, Y, Amp.T, levels=100, cmap="gist_heat")
+plt.xscale("log")
+plt.yscale("log")
+plt.xlabel(r"$\alpha$")
+plt.ylabel(r"$\beta$")
+plt.title("Log10 de la amplitud de $p_3$")
+plt.colorbar(pcm, label=r"$\log_{10}(\text{amplitud})$")
+plt.savefig("Taller 3/5.pdf")
