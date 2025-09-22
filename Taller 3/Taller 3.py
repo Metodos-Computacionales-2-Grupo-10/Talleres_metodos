@@ -1,6 +1,255 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+<<<<<<< HEAD
+=======
+import numpy as np
+from scipy.optimize import curve_fit
+from numba import njit
+
+
+# 1.a — Lotka–Volterra
+
+
+def lv_rhs(t, z, alpha, beta, gamma, delta):
+    x, y = z #vector estado 
+    dx = alpha*x - beta*x*y
+    dy = -gamma*y + delta*x*y #basicamente las ecuaciones y devuelve x y y punto
+    return [dx, dy]
+
+alpha, beta, gamma, delta = 2.0, 1.5, 0.3, 0.4
+x0, y0 = 3.0, 2.0
+t0, tf = 0.0, 50.0 #basicamente todas las ctes y que se integra en un itervalo de tiempo entre 0 y 50 
+t_eval = np.linspace(t0, tf, 10001) #evualuar 10001 puntos uniformes para graficar suave 
+
+sol = solve_ivp(fun=lambda t, z: lv_rhs(t, z, alpha, beta, gamma, delta),t_span=(t0, tf), y0=[x0, y0],t_eval=t_eval, method="RK45")
+t = sol.t
+x, y = sol.y #solución numérica 
+V = delta*x - gamma*np.log(np.maximum(x, 1e-12)) + beta*y - alpha*np.log(np.maximum(y, 1e-12)) #cantidad conservada, 1e-12 evita ln(0)
+
+fig, axes = plt.subplots(3, 1, figsize=(8, 9), constrained_layout=True)
+axes[0].plot(t, x); axes[0].set_title("1.a Lotka/Volterra: x(t)")
+axes[1].plot(t, y); axes[1].set_title("1.a Lotka/Volterra: y(t)")
+axes[2].plot(t, V); axes[2].set_title("1.a Cantidad conservada V(t)")
+for ax in axes: ax.set_xlabel("t")
+plt.savefig("Taller 3/1a.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.close(fig)
+
+
+# 1.b — Landau 2D con E(x), Bz
+
+
+def landau_rhs(t, y, q, m, E0, B0, k):
+    x, y_, vx, vy = y
+    Fx = q*E0*(np.sin(k*x) + k*x*np.cos(k*x))
+    dvx = (Fx + q*B0*vy)/m
+    dvy = (-q*B0*vx)/m
+    return [vx, vy, dvx, dvy]
+
+q, m = 7.5284, 3.8428
+B0, E0, k = 0.438, 0.7423, 1.0014
+x0, y0, vx0, vy0 = 0.1, 0.0, 0.0, 0.2
+t0, tf = 0.0, 30.0
+t_eval = np.linspace(t0, tf, 60001) #todo exactamente igual al primero 
+
+sol = solve_ivp(fun=lambda t, Y: landau_rhs(t, Y, q, m, E0, B0, k),t_span=(t0, tf), y0=[x0, y0, vx0, vy0],t_eval=t_eval, method="RK45")
+t = sol.t
+x, y, vx, vy = sol.y
+K = 0.5*m*(vx**2 + vy**2)
+U = - q*E0*x*np.sin(k*x)
+E = K + U
+Pi_y = m*vy - q*B0*x #cantidades fisicas a monitorear, este es el momento conjugado en y con B uniforme 
+
+fig, axes = plt.subplots(4, 1, figsize=(8, 11), constrained_layout=True)
+axes[0].plot(t, x);    axes[0].set_title("1.b Landau: x(t)")
+axes[1].plot(t, y);    axes[1].set_title("1.b Landau: y(t)")
+axes[2].plot(t, Pi_y); axes[2].set_title("1.b Momento conjugado Π_y(t)")
+axes[3].plot(t, E);    axes[3].set_title("1.b Energía total E(t)")
+for ax in axes: ax.set_xlabel("t")
+plt.savefig("Taller 3/1b.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.close(fig)
+
+
+# 1.c — Dos cuerpos gravitacionales
+
+
+def two_body_rhs(t, y, m=1.7, G=1.0):
+    x1, y1, vx1, vy1, x2, y2, vx2, vy2 = y
+    r1 = np.array([x1, y1])
+    r2 = np.array([x2, y2])
+    dr = r1 - r2
+    dist = np.sqrt(dr[0]**2 + dr[1]**2)
+    dist3 = dist**3 if dist > 1e-12 else 1e-12 #esto me lo dio chat para evitar la divicion por 0 en la ley de gravitación 
+    a1 = -G*m*dr/dist3
+    a2 = -G*m*(-dr)/dist3
+    return [vx1, vy1, a1[0], a1[1], vx2, vy2, a2[0], a2[1]]
+
+m, G = 1.7, 1.0
+r1_0, v1_0 = [0.0, 0.0], [0.0, 0.5]
+r2_0, v2_0 = [1.0, 1.0], [0.0,-0.5]
+t0, tf = 0.0, 10.0
+t_eval = np.linspace(t0, tf, 20001)
+
+y0 = [r1_0[0], r1_0[1], v1_0[0], v1_0[1], r2_0[0], r2_0[1], v2_0[0], v2_0[1]]
+
+sol = solve_ivp(fun=lambda t, y: two_body_rhs(t, y, m=m, G=G),t_span=(t0, tf), y0=y0,t_eval=t_eval, method="RK45")
+t = sol.t
+x1, y1, vx1, vy1, x2, y2, vx2, vy2 = sol.y
+R1 = np.vstack((x1, y1)).T
+R2 = np.vstack((x2, y2)).T
+V1 = np.vstack((vx1, vy1)).T
+V2 = np.vstack((vx2, vy2)).T #convierte un (vector) en un array de puntos vertical
+dr = R1 - R2
+dist = np.linalg.norm(dr, axis=1)
+U = - G*m*m / np.maximum(dist, 1e-12)
+K = 0.5*m*(np.sum(V1**2, axis=1) + np.sum(V2**2, axis=1))
+E = K + U
+Lz = m*(R1[:,0]*V1[:,1] - R1[:,1]*V1[:,0]) + m*(R2[:,0]*V2[:,1] - R2[:,1]*V2[:,0])
+
+fig, axes = plt.subplots(4, 1, figsize=(8, 11), constrained_layout=True)
+axes[0].plot(t, x1, label="x1"); axes[0].plot(t, x2, label="x2", alpha=0.85)
+axes[1].plot(t, y1, label="y1"); axes[1].plot(t, y2, label="y2", alpha=0.85)
+axes[2].plot(t, E);  axes[2].set_title("1.c Energía total E(t)")
+axes[3].plot(t, Lz); axes[3].set_title("1.c Momento angular total Lz(t)")
+axes[0].set_title("1.c Binario: x1(t), x2(t)"); axes[0].legend()
+axes[1].set_title("1.c Binario: y1(t), y2(t)"); axes[1].legend()
+for ax in axes: ax.set_xlabel("t")
+plt.savefig("Taller 3/1c.pdf", bbox_inches="tight", pad_inches=0.1)
+plt.close(fig)
+
+"""2. Balistica"""
+# Constantes del ejercicio
+m = 10.01  # kg
+A = 1.642
+B = 40.624
+C = 2.36
+g = 9.7732  # m/s^2
+v_0 = np.linspace(0, 140, 100)  
+angulos = np.linspace(10, 80, 100)  
+
+#Coeficiente de fricción DADO EN EL ENUNCIADO
+def beta(y):
+    return A * (1 - y / B) ** C
+
+# Modelo de ecuaciones
+###Resolviendo sumatoria de fuerzas=ma y diviendo por m
+def modelo(t, estado):
+    x, y, vx, vy = estado
+    v = np.sqrt(vx**2 + vy**2)
+    ax = -beta(y) * v * vx / m
+    ay = -g - beta(y) * v * vy / m
+    return [vx, vy, ax, ay]
+
+# Evento donde acaba la simulación (cuando y=0), aca me ayudo chat y la guia de santiago con .terminal y .direction
+def hit_ground(t, estado):
+    return estado[1]
+hit_ground.terminal = True #detiene la integración
+hit_ground.direction = -1 #solo toma direccion de bajada
+
+alcances = []
+thetas_xmax = []
+
+for vel in v_0:
+    x_max = 0
+    theta_max = 0
+    for theta_deg in angulos:
+        theta_rad = np.deg2rad(theta_deg)
+        estado_inicial = [0, 0,
+                          vel * np.cos(theta_rad),
+                          vel * np.sin(theta_rad)]
+
+        sol = solve_ivp(modelo, t_span=(0, 200),
+                        y0=estado_inicial,
+                        events=hit_ground, max_step=0.1)
+
+        if sol.status == 1 and sol.t_events[0].size > 0:
+            x_land = sol.y[0, -1]
+            if x_land > x_max:
+                x_max = x_land
+                theta_max = theta_deg  # guardamos en GRADOS
+    alcances.append(x_max)
+    thetas_xmax.append(theta_max)
+    plt.scatter(vel, x_max, color='blue')
+    #plt.scatter(vel, theta_max, color='red') #esto es para ver el angulo maximo pero no me lo pidieron
+plt.xlabel('Velocidad inicial (m/s)')
+plt.ylabel('Alcance máximo (m)')
+plt.title('Alcance máximo vs Velocidad inicial')
+plt.savefig('Taller 3/2.a.pdf')
+plt.close()
+"""2.b Atinar a un objetivo
+Escriba una función  angle_to_hit_target(v0,target_x,target_y)  que dada una veloci0
+dad inicial fija, encuentre el ángulo necesario 𝜃0 para que el cañón atine a un objetivo en las
+coordenadas  target_x,target_y , ambas positivas.
+Debería probar con varios objetivos, graficar la trayectoria y asegurarse de que su código
+funciona, pues no queremos decepcionar al general. No necesita guardar estas gráficas"""
+
+def angle_to_hit_target(v0, target_x, target_y):
+    if target_x>0 and target_y>=0:
+        angulo_resultado = []
+        sol_hit = None
+        angulos = np.linspace(10, 80, 100)  # en grados
+        tolerancia = 0.1 # margen de error
+        for angulo in angulos:
+            angulo_rad = np.deg2rad(angulo)
+            estado_inicial = [0, 0,
+                              v0 * np.cos(angulo_rad),
+                              v0 * np.sin(angulo_rad)]
+
+            sol = solve_ivp(modelo, t_span=(0, 200),
+                            y0=estado_inicial,
+                            events=hit_ground, max_step=0.1)
+            
+            trayectoria_x = sol.y[0]
+            trayectoria_y = sol.y[1]
+            ###No pude resolver para un punto especifico, pues se necesita muchos puntos
+            ###entonces lo que hice fue buscar si en la trayectoria hay un punto entre pos_objetivo-tolerancia y pos_objetivo+tolerancia
+            #####Correccion (tomaba trayectorias que no llegaban al target) chat me recomendo hacerlo asi
+            distancias = np.sqrt((trayectoria_x - target_x)**2 + (trayectoria_y - target_y)**2)
+
+            if np.any(distancias < tolerancia):
+                angulo_resultado.append(angulo)
+                sol_hit = sol
+                #plt.plot(trayectoria_x, trayectoria_y, label=f'Trayectoria ángulo {angulo:.2f}°')
+    else:
+        return None, None, None
+
+    if sol_hit is None:
+        return None, None, None
+    #plt.scatter(target_x, target_y, label='Target', color='r')
+    #plt.legend()
+    #plt.show()
+    return angulo_resultado, sol_hit.y[0], sol_hit.y[1]
+"""ESTA FUNCION FUNCIONA PERO TIENE ERRORES NO SE PORQUE"""
+    
+##PRUEBA y VISUALIZACION
+#angulo_hit,x,y = angle_to_hit_target(40,12,0)
+#plt.plot(x,y,label='trayectoria')
+#plt.scatter(12,0,label='Target',color= 'r')
+#plt.show()
+
+"""2.c Varias opciones para disparar
+Dado un objetivo (𝑥, 𝑦) existen varias combinaciones de 𝑣0 y 𝜃0 que hacen que el disparo
+llegue al objetivo. Caracterice este conjunto de soluciones. ¿Qué dimensión tiene? ¿Se le ocurre
+alguna parametrización?
+Cree una gráfica ( 2.c.pdf ) de 𝜃0 vs 𝑣0 que muestre dónde están las condiciones iniciales que
+atinan al objetivo en (𝑥, 𝑦) = (12m, 0)
+"""
+
+for vel in v_0:
+    angulos_hit, x, y = angle_to_hit_target(vel, 12, 0)
+    if angulos_hit is not None and len(angulos_hit) > 0:
+        for angulo in angulos_hit:
+            plt.scatter(vel, angulo, color='blue')
+plt.xlabel('Velocidad inicial (m/s)')
+plt.ylabel('Ángulo de disparo (grados)')
+plt.title('Ángulo de disparo vs Velocidad inicial para alcanzar (12m, 0)')
+plt.savefig('Taller 3/2.c.pdf')
+        
+"""3. Molecula diatomica"""
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+>>>>>>> main
 from scipy.optimize import brentq
 
 
@@ -42,6 +291,7 @@ def root(E, x_range=(0, 20), npts=1000):
     # Devolvemos la primera y la última raíz encontradas (x1 y x2)
     return roots[0], roots[-1]
 
+<<<<<<< HEAD
 # -----------------------------
 # INTEGRAR para una energía de prueba E
 # -----------------------------
@@ -50,18 +300,37 @@ def integrar(E):
     puntos = root(E)
     if puntos is None:
         # Si no hay puntos de giro, no hay un pozo clásico acotado para esa E
+=======
+
+# INTEGRAR para una energía de prueba E
+
+def integrar(E):
+    # 1) calculamos los puntos x1, x2 donde V(x)=E
+    puntos = root(E)
+    if puntos is None:
+        # Si no hay puntos, retorna None
+>>>>>>> main
         return None, None, None
 
     x1, x2 = puntos
     # 2) Según la guía: integrar desde x1 - 2 hasta x2 + 1
+<<<<<<< HEAD
     x_span = (x1 - 2, x2 + 1)  
     x_eval = np.linspace(*x_span, 800)  # puntos donde queremos la solución
+=======
+    x_interval = (x1 - 2, x2 + 1)  
+    x_eval = np.linspace(*x_interval, 800)  # puntos donde queremos la solución
+>>>>>>> main
 
     # 3) condiciones iniciales:
     #    psi(x_start) = 0   
     #    psi'(x_start) = 1e-5 
     sol = solve_ivp(
+<<<<<<< HEAD
         schrodinger, x_span, [0, 1e-5], args=(E,),
+=======
+        schrodinger, x_interval, [0, 1e-5], args=(E,),
+>>>>>>> main
         t_eval=x_eval, max_step=0.01  # max_step = 0.01 como piden
     )
 
@@ -71,6 +340,7 @@ def integrar(E):
     return sol.t, psi, psi[-1]
 
 # -----------------------------
+<<<<<<< HEAD
 # BÚSQUEDA DE ENERGÍAS (método shooting)
 # -----------------------------
 # - "E_vals" son las energías de prueba (cada E es un 'epsilon' de prueba).
@@ -121,6 +391,51 @@ for i in idx_crossings:
         # capturamos el error y seguimos con el siguiente cruce.
         pass
 
+=======
+# BÚSQUEDA DE ENERGÍAS (shooting simplificado)
+# -----------------------------
+
+# Paso 1: generar energías de prueba (epsilon de prueba)
+# Aquí probamos valores de energía entre -0.999 y -0.01
+E_pruebas = np.linspace(-0.999, -0.01, 100)
+
+# Aquí vamos a guardar los valores de psi en el borde derecho
+psi_finales = []
+
+# Paso 2: integrar para cada energía
+for E in E_pruebas:
+    x, psi, psi_end = integrar(E)   # resolvemos la ecuación
+    if x is not None:
+        # Guardamos el valor final de la función de onda
+        psi_finales.append(psi_end)
+    else:
+        # Si no hay solución válida guardamos 0
+        psi_finales.append(0)
+
+
+psi_finales = np.array(psi_finales)
+
+# Paso 3: buscar intervalos donde la función cambió de signo
+# Eso significa que psi_final pasó de + a - o de - a +, 
+# lo cual indica que en medio hay una raíz.
+idx_cruces = []
+for i in range(len(E_pruebas)-1):
+    if psi_finales[i] * psi_finales[i+1] < 0:
+        idx_cruces.append(i)
+
+# Paso 4: refinar con brentq
+# brentq encuentra con precisión el valor de energía donde psi_final(E) = 0
+energias_ligadas = []
+for i in idx_cruces:
+    try:
+        E_raiz = brentq(lambda E: integrar(E)[2], E_pruebas[i], E_pruebas[i+1])
+        energias_ligadas.append(E_raiz)
+    except:
+        # Si por algún motivo falla, pasamos al siguiente
+        pass
+
+
+>>>>>>> main
 # -----------------------------
 # GRAFICAR POTENCIAL y FUNCIONES DE ONDA (normalizadas)
 # -----------------------------
@@ -128,12 +443,21 @@ plt.figure(figsize=(9,6))
 x_plot = np.linspace(5, 15, 500)
 plt.plot(x_plot, V(x_plot), 'k', label="V(x)")
 
+<<<<<<< HEAD
 escala = 0.05  # cuánto "estiramos" psi para que se vea bien cuando la dibujamos encima de E
 for n, E in enumerate(bound_state_energies):
     x, psi, _ = integrar(E)
     if x is not None:
         # Normalización: ∫ psi^2 dx = 1 (aproximada con trapz)
         norm = np.sqrt(np.trapz(psi**2, x))
+=======
+escala = 0.05  
+for n, E in enumerate(energias_ligadas):
+    x, psi, _ = integrar(E)
+    if x is not None:
+        # Normalización: ∫ psi^2 dx = 1 
+        norm = np.sqrt(np.trapezoid(psi**2, x))
+>>>>>>> main
         psi /= norm
         # Dibujamos una línea punteada donde está la energía E
         plt.hlines(E, 0, 15, linestyles="dashed", colors="gray", alpha=0.7)
@@ -147,6 +471,7 @@ plt.ylim(-1.1, 0.1)
 plt.xlim(0, 15)
 plt.legend()
 plt.grid()
+<<<<<<< HEAD
 plt.show()
 
 
@@ -154,21 +479,47 @@ plt.show()
 # ------------------------------
 # Comparación con valores teóricos
 # ------------------------------
+=======
+plt.savefig("Taller 3/3.pdf")
+plt.close()
+
+
+
+# Comparación con valores teóricos
+
+import numpy as np
+
+# Parámetros
+hbar = 0.1
+a = 0.8
+x0 = 10.0
+>>>>>>> main
 
 # Parámetro λ
 lam = 1 / (a * hbar)
 
+<<<<<<< HEAD
 # Energías teóricas (hasta que dejen de ser positivas dentro del pozo)
 E_teoricas = []
 n_vals = range(len(bound_state_energies))
 for n in n_vals:
     E_n = (2*lam - (n + 0.5)) * (n + 0.5) / (lam**2)
     if E_n < 0:  # solo los estados ligados
+=======
+
+# Energías teóricas (hasta que dejen de ser negativas dentro del pozo)
+E_teoricas = []
+n_vals = range(len(energias_ligadas))
+for n in n_vals:
+    E_n = -1 + (n + 0.5) * hbar * a * np.sqrt(2) - (hbar**2 * a**2 / 8) * (n + 0.5)**2
+    if E_n < 0:  # solo los estados ligados (energías negativas)
+>>>>>>> main
         E_teoricas.append(E_n)
     else:
         break
 
 # Ajustamos la lista a las energías numéricas obtenidas
+<<<<<<< HEAD
 n_vals = range(len(E_teoricas))
 import numpy as np
 
@@ -176,15 +527,150 @@ import numpy as np
 tabla = []
 for n, (E_num, E_teo) in enumerate(zip(bound_state_energies, E_teoricas)):
     diff_pct = abs((E_num - E_teo) / E_teo) * 100
+=======
+E_teoricas = E_teoricas[:len(energias_ligadas)]
+
+# Construir tabla en formato numérico
+tabla = []
+#print("Comparación de energías:")
+#print("n\tE_numérico\tE_teórico\tDiferencia(%)")
+#print("-" * 50)
+
+for n, (E_num, E_teo) in enumerate(zip(energias_ligadas, E_teoricas)):
+    diff_pct = abs((E_num - E_teo) / abs(E_teo)) * 100  # Usamos valor absoluto para el porcentaje
+    #print(f"{n}\t{E_num:.6f}\t{E_teo:.6f}\t{diff_pct:.3f}%")
+>>>>>>> main
     tabla.append([n, E_num, E_teo, diff_pct])
 
 tabla = np.array(tabla)
 
 # Guardar como archivo de texto
 np.savetxt(
+<<<<<<< HEAD
     "Taller 3/1.c.txt",
     tabla,
     header="n   E_numérico   E_teórico   Diferencia(%)",
     fmt=["%d", "%.6f", "%.6f", "%.3f"],
     delimiter="\t"
 )
+=======
+    "Taller 3/3.txt",  
+    tabla,
+    header="n\tE_numérico\tE_teórico\tDiferencia(%)",
+    fmt=["%d", "%.6f", "%.6f", "%.3f"],
+    delimiter="\t"
+)
+
+
+""""7 (0.75pt) Perfil de densidad estelar"""
+
+import csv
+
+# -------------------------------
+# Configuración
+x0 = 1e-6      # inicio (evita singularidad en 0)
+max_step = 0.01
+rtol = 1e-12
+atol = 1e-14
+
+# Lista de índices politrópicos
+n_list = [0.0, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0]
+
+# -------------------------------
+# Definiciones
+def lane_emden_rhs(x, y, n):
+    """EDO de Lane-Emden en forma de sistema de primer orden"""
+    theta, dtheta = y
+    ddtheta = - (2.0 / x) * dtheta - theta**n
+    return [dtheta, ddtheta]
+
+def theta_series(x):
+    """Expansión en serie cerca de x=0"""
+    return 1.0 - x**2 / 6.0, -x / 3.0
+
+def solve_lane_emden(n, xmax=20000):
+    """Resuelve Lane-Emden para un índice polytropico n"""
+    th0, dth0 = theta_series(x0)
+    y0 = [th0, dth0]
+
+    def event_theta_zero(x, y):
+        return y[0]
+    event_theta_zero.terminal = True
+    event_theta_zero.direction = -1
+
+    sol = solve_ivp(lambda x, y: lane_emden_rhs(x, y, n),
+                    (x0, xmax), y0,
+                    events=event_theta_zero,
+                    max_step=max_step,
+                    rtol=rtol, atol=atol)
+
+    if sol.t_events[0].size > 0:
+        x_star = float(sol.t_events[0][0])
+        dtheta_at_root = float(sol.y_events[0][0][1])
+        M_prop = - (x_star**2) * dtheta_at_root
+        rho_ratio = - (1.0 / 3.0) * (x_star / dtheta_at_root)
+        return x_star, M_prop, rho_ratio
+    else:
+        return np.nan, np.nan, np.nan
+
+# -------------------------------
+# Cálculos
+results = []
+for n in n_list:
+    if n == 5.0:
+        # caso especial: radio infinito
+        results.append([n, np.nan, np.nan, np.nan])
+    else:
+        x_star, M_prop, rho_ratio = solve_lane_emden(n)
+        results.append([n, x_star, M_prop, rho_ratio])
+        #print(f"n={n}  x*={x_star:.6g}  M~{M_prop:.6g}  rho_c/<rho>={rho_ratio:.6g}")
+
+# -------------------------------
+# Guardar CSV
+with open("Taller 3/7.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["n", "x_star", "M_proportional", "rho_c_over_rho_avg"])
+    for row in results:
+        writer.writerow(row)
+
+#print("\nTabla exportada como 7.csv ✅")
+
+"""5 (0.75pt) Circuito genético oscilatorio"""
+def F(t,y,a,b):
+  m1, m2,m3, p1, p2, p3=y
+  return np.array([
+      (a/(1+p3**2)+a/1000-m1),
+      (a/(1+p1**2)+a/1000-m2),
+      (a/(1+p2**2)+a/1000-m3),
+      -b*(p1-m1),
+      -b*(p2-m2),
+      -b*(p3-m3)
+  ])
+alphas=np.logspace(0, 5, 50)
+betas=np.logspace(0, 2, 50)
+def evento (t,y,a,b):
+  m1, m2,m3, p1, p2, p3=y
+  return -b*(p3-m3)+1e-8
+evento.terminal=22
+def respuesta (alphas, betas):
+    A = np.zeros((len(alphas), len(betas)))
+    for i in range(len(alphas)):
+      for j in range(len(betas)):
+        tv=np.linspace(0,400,700)
+        sol=solve_ivp(fun=F, t_span=(0,400), y0=[0.01,0.02,0.03,0.004,0.05, 0.],t_eval=tv,events=evento, args=(alphas[i], betas[j]))
+        amplitud=(np.max(sol.y[5][int(len(sol.t)*0.9):])-np.min(sol.y[5][int(len(sol.t)*0.9):]))/2
+        A[i,j]=np.log10(amplitud+1e-8)
+    return A
+
+Amp=respuesta(alphas, betas)
+X, Y = np.meshgrid(alphas,betas)
+
+pcm = plt.contourf(X, Y, Amp.T, levels=100, cmap="gist_heat")
+plt.xscale("log")
+plt.yscale("log")
+plt.xlabel(r"$\alpha$")
+plt.ylabel(r"$\beta$")
+plt.title("Log10 de la amplitud de $p_3$")
+plt.colorbar(pcm, label=r"$\log_{10}(\text{amplitud})$")
+plt.savefig("Taller 3/5.pdf")
+>>>>>>> main
