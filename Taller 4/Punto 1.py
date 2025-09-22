@@ -35,97 +35,84 @@ def evolve_schrodinger(U, V, pot, dx, dt):
         V[n+1,-1] = V[n+1,-2]"""
         
 import numpy as np
-import scipy.sparse as sp
-import scipy.sparse.linalg as spla
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+from matplotlib import animation
+from numba import njit
 
 # Parámetros
 alpha = 0.1
-tmax = 150.0
-x_min, x_max = -20.0, 20.0
-Nx = 800
-dx = (x_max - x_min) / (Nx - 1)
-x = np.linspace(x_min, x_max, Nx)
-dt = 0.05
-Nt = int(np.round(tmax / dt)) + 1
-t = np.linspace(0, tmax, Nt)
+x_min, x_max = -20, 20
+dx = 0.1
+x = np.arange(x_min, x_max+dx, dx)
+N = len(x)
 
-# Potencial: oscilador armónico
-V = -x**2 / 50.0
+dt = 0.01     # paso de tiempo
+T  = 150.0    # tiempo total
+nt = int(T/dt)
 
-# Condición inicial: paquete gaussiano con momento inicial
+# Potencial oscilador armónico
+V = x**2/50
+
+# Condición inicial: paquete gaussiano centrado en x0=10 con momento k0=-2
 x0 = 10.0
-k0 = 2.0
-psi0 = np.exp(-2.0 * (x - x0)**2) * np.exp(-1j * k0 * x)
-norm0 = np.sqrt(np.sum(np.abs(psi0)**2) * dx)
-psi0 = psi0 / norm0
+k0 = -2.0
+psi0 = np.exp(-2*(x-x0)**2) * np.exp(1j*k0*x)
+psi0 = psi0 / np.sqrt(np.trapz(np.abs(psi0)**2, x))  # normalizar
 
-# Matriz de derivadas (Neumann)
-main = -2.0 * np.ones(Nx)
-off = 1.0 * np.ones(Nx - 1)
-D = sp.diags([off, main, off], offsets=[-1, 0, 1], format='csc') / dx**2
-D = D.tolil()
-D[0,0], D[0,1] = -2.0/dx**2, 2.0/dx**2
-D[-1,-1], D[-1,-2] = -2.0/dx**2, 2.0/dx**2
-D = D.tocsc()
 
-# Hamiltoniano
-H = alpha * D - sp.diags(-V, 0, format='csc')
-I = sp.identity(Nx, format='csc')
-A = I - 1j * dt/2 * H
-B = I + 1j * dt/2 * H
-A_factor = spla.factorized(A)
+@njit
+def laplacian_neumann(psi, dx):
+    N = len(psi)
+    d2 = np.zeros(N, dtype=np.complex128)
+    for i in range(1, N-1):
+        d2[i] = (psi[i+1] - 2*psi[i] + psi[i-1]) / dx**2
+    d2[0]  = (psi[1] - psi[0]) * 2 / dx**2
+    d2[-1] = (psi[-2] - psi[-1]) * 2 / dx**2
+    return d2
 
-# Evolución
-psi = psi0.copy().astype(np.complex128)
-mu_t, sigma_t = [], []
-frames = 400
-step_per_frame = Nt // frames
 
-snapshots, times = [], []
+@njit
+def schrodinger_rhs(psi, alpha, V, dx):
+    return 1j*(alpha*laplacian_neumann(psi, dx) - V*psi)
 
-for n in range(Nt):
-    prob = np.abs(psi)**2
-    mu = np.sum(x * prob) * dx
-    sigma = np.sqrt(np.sum((x - mu)**2 * prob) * dx)
-    mu_t.append(mu)
-    sigma_t.append(sigma)
 
-    if n % step_per_frame == 0:
-        snapshots.append(prob.copy())
+@njit
+def rk4_step(psi, dt, alpha, V, dx):
+    k1 = schrodinger_rhs(psi, alpha, V, dx)
+    k2 = schrodinger_rhs(psi + 0.5*dt*k1, alpha, V, dx)
+    k3 = schrodinger_rhs(psi + 0.5*dt*k2, alpha, V, dx)
+    k4 = schrodinger_rhs(psi + dt*k3, alpha, V, dx)
+    return psi + dt*(k1 + 2*k2 + 2*k3 + k4)/6
+
+
+# Evolución temporal (guardando cada "skip" pasos)
+skip = 10  # guarda cada 50 pasos -> avanza 0.5 unidades de tiempo por frame
+psi = psi0.copy()
+frames = []
+times  = []
+
+for n in range(nt):
+    if n % skip == 0:
+        frames.append(np.abs(psi)**2)
         times.append(n*dt)
+    psi = rk4_step(psi, dt, alpha, V, dx)
 
-    rhs = B.dot(psi)
-    psi = A_factor(rhs)
-    if (n+1) % 200 == 0:
-        psi /= np.sqrt(np.sum(np.abs(psi)**2) * dx)
+frames = np.array(frames)
+times  = np.array(times)
 
-# Animación en pantalla
-fig, ax = plt.subplots()
-line, = ax.plot(x, snapshots[0])
+# Animación
+fig, ax = plt.subplots(figsize=(8,4.5))
+line, = ax.plot(x, frames[0])
 ax.set_xlim(x_min, x_max)
-ax.set_ylim(0, max(map(np.max, snapshots))*1.1)
-ax.set_xlabel('x')
-ax.set_ylabel('|ψ(x,t)|²')
+ax.set_ylim(0, np.max(frames)*1.1)
+ax.set_xlabel("x")
+ax.set_ylabel("|ψ(x,t)|²")
+title = ax.text(0.02, 0.95, "", transform=ax.transAxes)
 
-def animate(i):
-    line.set_ydata(snapshots[i])
-    ax.set_title(f't = {times[i]:.1f}')
-    return line,
+def update(i):
+    line.set_ydata(frames[i])
+    title.set_text(f"t = {times[i]:.1f}")
+    return line, title
 
-ani = animation.FuncAnimation(fig, animate, frames=len(snapshots), blit=True)
-
-# Mostrar animación y luego la gráfica de μ ± σ
-plt.show()
-
-fig2, ax2 = plt.subplots()
-ax2.plot(t, mu_t, label='μ(t)')
-ax2.fill_between(t, np.array(mu_t)-np.array(sigma_t), 
-                    np.array(mu_t)+np.array(sigma_t), 
-                    alpha=0.3, label='μ ± σ')
-ax2.set_xlabel('Tiempo')
-ax2.set_ylabel('Posición media')
-ax2.legend()
-plt.tight_layout()
+ani = animation.FuncAnimation(fig, update, frames=len(frames), blit=True, interval=30)
 plt.show()
