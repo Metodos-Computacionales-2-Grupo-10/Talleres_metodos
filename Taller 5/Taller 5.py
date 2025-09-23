@@ -43,7 +43,7 @@ plt.yscale('log')
 plt.legend()
 plt.title('Evolución de las cantidades de U, Np y Pu en 30 días')
 plt.grid()
-plt.show()
+plt.savefig("Taller 5/2.a.png")
 
 # Verificamos estabilidad
 # Función para detectar estabilidad
@@ -155,4 +155,4 @@ plt.xlabel("Tiempo")
 plt.ylabel("Número de Pu")
 plt.title("Simulaciones estocásticas con algoritmo de Gillespie")
 plt.legend()
-plt.show()
+plt.savefig("Taller 5/2.c.png")
