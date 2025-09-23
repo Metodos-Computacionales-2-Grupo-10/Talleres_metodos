@@ -89,7 +89,8 @@ for n in range(nt):
 # ============================
 fig, ax = plt.subplots()
 line, = ax.plot(x, frames[0], lw=2)
-ax.plot(V,x,color='grey',label='Potencial')
+V_scaled = V / np.max(V) * np.max(frames[0])
+ax.plot(x, V_scaled, color='grey', label='Potencial')
 ax.set_ylim(0, np.max(frames[0]))
 ax.set_xlabel("x")
 ax.set_ylabel("|ψ|²")
@@ -122,7 +123,7 @@ x_min, x_max = -20, 20      # Rango espacial
 dx = 0.1                    # Paso en el espacio
 x = np.arange(x_min, x_max+dx, dx)  # Malla espacial
 dt = 0.01                   # Paso de tiempo
-T  = 100.0                  # Tiempo total de simulación
+T  = 50.0                  # Tiempo total de simulación
 nt = int(T/dt)              # Número total de pasos de tiempo
 
 
