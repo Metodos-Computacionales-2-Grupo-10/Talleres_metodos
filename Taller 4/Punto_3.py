@@ -58,7 +58,7 @@ plt.ylabel("u(x,t)")
 plt.title("Evolución KdV (RK4 explícito)")
 plt.legend()
 plt.tight_layout()
-plt.savefig("3_solitones.png", dpi=200)
+plt.savefig("Taller 4/3_solitones.png", dpi=200)
 plt.close()
 
 # Animación
@@ -77,4 +77,4 @@ def animate(i):
 
 ani = FuncAnimation(fig, animate, frames=len(times), interval=30, blit=False)
 writer = FFMpegWriter(fps=30, bitrate=1800)
-ani.save("3_solitones.mp4", writer=writer, dpi=200)
+ani.save("Taller 4/3_solitones.mp4", writer=writer, dpi=200)
