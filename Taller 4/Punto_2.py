@@ -20,8 +20,7 @@ v = pde.ScalarField.random_normal(grid, label="Field $v$")
 state = pde.FieldCollection([u, v])
 
 # Simulación
-tracker = pde.PlotTracker(interrupts=1, plot_args={"cmap": "Blues"})
-sol = eq.solve(state, t_range=15, dt=1e-3, tracker=[tracker])
+sol = eq.solve(state, t_range=15, dt=1e-3)
 # Caso 1 #Pequeñas formaciones (Mayor ramificación) (separacion entre gotas menor)
 a1, b1 = 0.00007, 0.05
 eq1 = pde.PDE(
@@ -38,8 +37,7 @@ v1 = pde.ScalarField.random_normal(grid1, label="Field $v$")
 state1 = pde.FieldCollection([u1, v1])
 
 # Simulacion
-tracker1 = pde.PlotTracker(interrupts=1, plot_args={"cmap": "Blues"})
-sol1 = eq1.solve(state1, t_range=20, dt=1e-3, tracker=[tracker1])
+sol1 = eq1.solve(state1, t_range=20, dt=1e-3)
 # Caso 2 #Mayor tamaño de agrupaciones (Menor ramificacion) (separacion entre gotas mayor)
 a2, b2 = 0.0008, 0.05
 eq2 = pde.PDE(
@@ -56,8 +54,7 @@ v2 = pde.ScalarField.random_normal(grid2, label="Field $v$")
 state1 = pde.FieldCollection([u2, v2])
 
 # Simulacion
-tracker2 = pde.PlotTracker(interrupts=1, plot_args={"cmap": "Blues"})
-sol2 = eq2.solve(state1, t_range=20, dt=1e-3, tracker=[tracker2])
+sol2 = eq2.solve(state1, t_range=20, dt=1e-3)
 x = np.linspace(0, 3, 200)
 y = np.linspace(0, 3, 200)
 X, Y = np.meshgrid(x, y)
@@ -97,8 +94,7 @@ v3 = pde.ScalarField.random_normal(grid3, label="Field $v$")
 state3 = pde.FieldCollection([u3, v3])
 
 # Simulación
-tracker3 = pde.PlotTracker(interrupts=0.1, plot_args={"cmap": "BuGn"})
-sol3 = eq3.solve(state3, t_range=6, dt=1e-4, tracker=[tracker3])
+sol3 = eq3.solve(state3, t_range=6, dt=1e-4)
 # Caso de 2 b
 a4, b4 = 0.00028, 0.015
 eq4 = pde.PDE(
@@ -115,8 +111,7 @@ v4 = pde.ScalarField.random_normal(grid4, label="Field $v$")
 state4 = pde.FieldCollection([u4, v4])
 
 # Simulación
-tracker4 = pde.PlotTracker(interrupts=1, plot_args={"cmap": "BuGn"})
-sol4 = eq4.solve(state4, t_range=15, dt=1e-3, tracker=[tracker4])
+sol4 = eq4.solve(state4, t_range=15, dt=1e-3)
 fig1, axes1 = plt.subplots(1, 3, figsize=(15, 5))
 fig1.suptitle("Dependencia del Factor β", fontsize=16)
 
@@ -158,10 +153,9 @@ eq7 = pde.PDE(
     }
 )
 
-tracker5 = pde.PlotTracker(interrupts=1, plot_args={"cmap": "PuOr"})
-sol5 = eq5.solve(state, t_range=15, dt=1e-3, tracker=[tracker5])
-sol6 = eq6.solve(state, t_range=15, dt=1e-3, tracker=[tracker5])
-sol7 = eq7.solve(state, t_range=15, dt=1e-3, tracker=[tracker5])
+sol5 = eq5.solve(state, t_range=15, dt=1e-3)
+sol6 = eq6.solve(state, t_range=15, dt=1e-3)
+sol7 = eq7.solve(state, t_range=15, dt=1e-3)
 fig2, axes2 = plt.subplots(1, 4, figsize=(20, 5))
 fig2.suptitle("Dependencia del numero en R(u-v)", fontsize=16)
 
@@ -193,8 +187,7 @@ eq10 = pde.PDE(
     }
 )
 
-tracker10= pde.PlotTracker(interrupts=1, plot_args={"cmap": "ocean"})
-sol10=eq10.solve(state, t_range=15, dt=1e-3, tracker=[tracker10])
+sol10=eq10.solve(state, t_range=15, dt=1e-3)
 plt.contourf(X,Y,(sol10[0].data).T, cmap="ocean", levels=100)
 plt.title("Algas (Función 1)")
 plt.colorbar()
@@ -204,22 +197,20 @@ a11, dx, dy = 0.005, 0.01, 0.01
 eq11 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.3",
-        "v": f"{dx}*d2_dx2(v) + {dy}*d2_dy2(v) - v*u**2 + 3",
+        "v": f"{dx}d2_dx2(v) + {dy}*d2_dy2(v) - v*u*2 + 3",
     }
 )
 
-tracker11= pde.PlotTracker(interrupts=1, plot_args={"cmap": "berlin"})
-sol11=eq11.solve(state, t_range=20, dt=1e-3, tracker=[tracker11])
+sol11=eq11.solve(state, t_range=20, dt=1e-3)
 a17, dx7, dy7 = 0.005, 0.01, 0.01
 eq17 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx7}*d2_dx2(v) + {dy7}*d2_dy2(v) - v*u**2 + 5",
+        "v": f"{dx7}d2_dx2(v) + {dy7}*d2_dy2(v) - v*u*2 + 5",
     }
 )
 
-tracker11= pde.PlotTracker(interrupts=0.5, plot_args={"cmap": "berlin"})
-sol17=eq17.solve(state, t_range=7, dt=0.5e-3, tracker=[tracker11])
+sol17=eq17.solve(state, t_range=7, dt=0.5e-3)
 fig3, axes3 = plt.subplots(1, 2, figsize=(10, 5))
 fig3.suptitle("Diferente spatrones con la función 2", fontsize=16)
 
@@ -231,7 +222,7 @@ a32 = axes3[1].contourf(X, Y, (sol17[0].data).T, cmap="berlin", levels=100)
 fig3.colorbar(a32, ax=axes3[1])
 axes3[1].set_title("Estructura de red (S=0.025, T=5, t=7)")
 
-fig3.text(0.5, 0.01, "Condiciones:Ut= 0.0005*∇**2 u+v*u**2-u-S, Vt=0.01*d2_dx2(v)+0.01*d2_dy2(v)-v*u**2+T",
+fig3.text(0.5, 0.01, "Condiciones:Ut= 0.0005*∇*2 u+v*u2-u-S, Vt=0.01*d2_dx2(v)+0.01*d2_dy2(v)-v*u*2+T",
          ha="center", va="bottom", fontsize=12)
 plt.tight_layout(rect=[0, 0.05, 1, 1])
 plt.savefig("Taller 4/2_Pez_loro_y_red.png")
@@ -239,47 +230,43 @@ a18, dx8, dy8 = 0.05, 0.2, 0.2
 eq18 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx8}*d2_dx2(v) + {dy8}*d2_dy2(v) - v*u**2 + 5",
+        "v": f"{dx8}d2_dx2(v) + {dy8}*d2_dy2(v) - v*u*2 + 5",
     }
 )
 
-tracker18= pde.PlotTracker(interrupts=0.5, plot_args={"cmap": "copper"})
-sol18=eq18.solve(state, t_range=15, dt=0.5e-4, tracker=[tracker18])
+sol18=eq18.solve(state, t_range=15, dt=0.5e-4)
 plt.contourf(X,Y,(sol18[1].data).T, cmap="copper", levels=100)
 plt.title("Jaguar (S=0.05, T=5, dx=dy=0.2)")
-plt.xlabel("Condiciones:Ut= 0.0005*∇**2 u+v*u**2-u-0.025, Vt=0.2*d2_dx2(v)+0.2*d2_dy2(v)-v*u**2+5", fontsize=7)
+plt.xlabel("Condiciones:Ut= 0.0005*∇*2 u+v*u2-u-0.025, Vt=0.2*d2_dx2(v)+0.2*d2_dy2(v)-v*u*2+5", fontsize=7)
 plt.colorbar()
 plt.savefig("Taller 4/2_Jaguar.png")
 a12, dx2, dy2 = 0.0005, 0.01, 0.02
 eq12 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx2}*d2_dx2(v) + {dy2}*d2_dy2(v) - v*u**2 + 1.55",
+        "v": f"{dx2}d2_dx2(v) + {dy2}*d2_dy2(v) - v*u*2 + 1.55",
     }
 )
 
-tracker12= pde.PlotTracker(interrupts=1, plot_args={"cmap": "afmhot"})
-sol12=eq12.solve(state, t_range=50, dt=1e-3, tracker=[tracker12])
+sol12=eq12.solve(state, t_range=50, dt=1e-3)
 dx3, dy3 = 0.02, 0.02
 eq13 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx3}*d2_dx2(v) + {dy3}*d2_dy2(v) - v*u**2 + 1.55",
+        "v": f"{dx3}d2_dx2(v) + {dy3}*d2_dy2(v) - v*u*2 + 1.55",
     }
 )
 
-tracker12= pde.PlotTracker(interrupts=1, plot_args={"cmap": "afmhot"})
-sol13=eq13.solve(state, t_range=50, dt=1e-3, tracker=[tracker12])
+sol13=eq13.solve(state, t_range=50, dt=1e-3)
 dx4, dy4 = 0.02, 0.01
 eq14 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx4}*d2_dx2(v) + {dy4}*d2_dy2(v) - v*u**2 + 1.55",
+        "v": f"{dx4}d2_dx2(v) + {dy4}*d2_dy2(v) - v*u*2 + 1.55",
     }
 )
 
-tracker12= pde.PlotTracker(interrupts=1, plot_args={"cmap": "afmhot"})
-sol14=eq14.solve(state, t_range=50, dt=1e-3, tracker=[tracker12])
+sol14=eq14.solve(state, t_range=50, dt=1e-3)
 fig4, axes4= plt.subplots(1, 3, figsize=(15, 5))
 fig4.suptitle("Dependencia de dx y dy (lineas y puntos)", fontsize=16)
 
@@ -296,7 +283,6 @@ fig4.colorbar(b3, ax=axes4[2])
 axes4[2].set_title("dx=0.02, dy=0.01, dx/dy=2")
 
 plt.tight_layout(rect=[0, 0.05, 1, 1])
-fig4.text(0.5, 0.01, "Condiciones:Ut= 0.0005*∇**2 u+v*u**2-u-0.025, Vt=dx*d2_dx2(v)+dy*d2_dy2(v)-v*u**2+1.55",
+fig4.text(0.5, 0.01, "Condiciones:Ut= 0.0005*∇*2 u+v*u2-u-0.025, Vt=dx*d2_dx2(v)+dy*d2_dy2(v)-v*u*2+1.55",
          ha="center", va="bottom", fontsize=12)
 plt.savefig("Taller 4/2_Dependencia_dx_dy.png")
-
