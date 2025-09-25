@@ -1,4 +1,4 @@
-##PUNTO 2 
+##PUNTO 2
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -180,6 +180,8 @@ fig2.text(0.5, 0.01, "Condiciones: α=0.00028, β=0.05, F=u-u^3-v-0.05, G=R(u-v)
          ha="center", va="bottom", fontsize=12)
 plt.tight_layout(rect=[0, 0.05, 1, 1])
 plt.savefig("Taller 4/2_Dependencia_R(Factor R(u-v)).png")
+plt.close()
+
 eq10 = pde.PDE(
     {
         "u": f"{a} * laplace(u) + u - v*u**2",
@@ -187,54 +189,64 @@ eq10 = pde.PDE(
     }
 )
 
+
 sol10=eq10.solve(state, t_range=15, dt=1e-3)
 plt.contourf(X,Y,(sol10[0].data).T, cmap="ocean", levels=100)
 plt.title("Algas (Función 1)")
 plt.colorbar()
 plt.xlabel("Condiciones: α=0.00028, β=0.05, F=u-v*u**2, G=10(u-v). Formación ramificada similar a algas", fontsize=7)
 plt.savefig("Taller 4/2_Algas.png")
+plt.close()
+
 
 a18, dx8, dy8 = 0.05, 0.2, 0.2
 eq18 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx8}*d2_dx2(v) + {dy8}*d2_dy2(v) - v*u*2 + 5",
+        "v": f"{dx8}*d2_dx2(v) + {dy8}*d2_dy2(v) - v*u**2 + 5",
     }
 )
 
 sol18=eq18.solve(state, t_range=15, dt=0.5e-4)
+
 plt.contourf(X,Y,(sol18[1].data).T, cmap="copper", levels=100)
 plt.title("Jaguar (S=0.05, T=5, dx=dy=0.2)")
 plt.xlabel("Condiciones:Ut= 0.0005*∇*2 u+v*u2-u-0.025, Vt=0.2*d2_dx2(v)+0.2*d2_dy2(v)-v*u*2+5", fontsize=7)
 plt.colorbar()
 plt.savefig("Taller 4/2_Jaguar.png")
+plt.close()
+
 a12, dx2, dy2 = 0.0005, 0.01, 0.02
 eq12 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx2}*d2_dx2(v) + {dy2}*d2_dy2(v) - v*u*2 + 1.55",
+        "v": f"{dx2}*d2_dx2(v) + {dy2}*d2_dy2(v) - v*u**2 + 1.55",
     }
 )
 
 sol12=eq12.solve(state, t_range=50, dt=1e-3)
+
 dx3, dy3 = 0.02, 0.02
 eq13 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx3}*d2_dx2(v) + {dy3}*d2_dy2(v) - v*u*2 + 1.55",
+        "v": f"{dx3}*d2_dx2(v) + {dy3}*d2_dy2(v) - v*u**2 + 1.55",
     }
 )
 
 sol13=eq13.solve(state, t_range=50, dt=1e-3)
+
+
 dx4, dy4 = 0.02, 0.01
 eq14 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx4}*d2_dx2(v) + {dy4}*d2_dy2(v) - v*u*2 + 1.55",
+        "v": f"{dx4}*d2_dx2(v) + {dy4}*d2_dy2(v) - v*u**2 + 1.55",
     }
 )
 
 sol14=eq14.solve(state, t_range=50, dt=1e-3)
+
 fig4, axes4= plt.subplots(1, 3, figsize=(15, 5))
 fig4.suptitle("Dependencia de dx y dy (lineas y puntos)", fontsize=16)
 
@@ -259,7 +271,7 @@ a11, dx, dy = 0.005, 0.01, 0.01
 eq11 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.3",
-        "v": f"{dx}*d2_dx2(v) + {dy}*d2_dy2(v) - v*u*2 + 3",
+        "v": f"{dx}*d2_dx2(v) + {dy}*d2_dy2(v) - v*u**2 + 3",
     }
 )
 
@@ -269,13 +281,14 @@ a17, dx7, dy7 = 0.005, 0.01, 0.01
 eq17 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx7}*d2_dx2(v) + {dy7}*d2_dy2(v) - v*u*2 + 5",
+        "v": f"{dx7}*d2_dx2(v) + {dy7}*d2_dy2(v) - v*u**2 + 5",
     }
 )
 
 sol17=eq17.solve(state, t_range=7, dt=0.5e-3)
+
 fig3, axes3 = plt.subplots(1, 2, figsize=(10, 5))
-fig3.suptitle("Diferente spatrones con la función 2", fontsize=16)
+fig3.suptitle("Diferentes patrones con la función 2", fontsize=16)
 
 a3 = axes3[0].contourf(X, Y, (sol11[0].data).T, cmap="berlin", levels=100)
 fig3.colorbar(a3, ax=axes3[0])
