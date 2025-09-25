@@ -63,7 +63,7 @@ for i in range(len(sol.t)):          # recorremos cada tiempo
 
 # Convertimos la lista a un arreglo numpy (para facilidad)
 derivs = np.array(derivs)
-#print(derivs.shape)
+print(derivs.shape)
 # Evaluación de cada isótopo
 isotopos = ["U (Uranio-239)", "Np (Neptunio-239)", "Pu (Plutonio-239)"]
 for i, iso in enumerate(isotopos):
@@ -233,4 +233,90 @@ plt.tight_layout()
 plt.savefig("Taller 5/2.c.png")
 
 
+
 # -------- Parte 2d --------
+import numpy as np
+from math import sqrt
+
+# ---------- Wrappers de simulación ----------
+def simulacion_determinista(tiempo_simulacion):
+    sol = solve_ivp(ecuaciones_diferenciales, [0, tiempo_simulacion],
+                    [U0, Np0, Pu0],
+                    t_eval=np.linspace(0, tiempo_simulacion, 300))
+    tiempos = sol.t
+    Pu_vals = sol.y[2]
+    return tiempos, Pu_vals
+
+def simulacion_sde(tiempo_simulacion):
+    t_vals, U, Np, Pu = sde_rk2(A, B, lambda_U, lambda_Np, tiempo_simulacion)
+    return t_vals, Pu
+
+def simulacion_gillespie_pu(tiempo_simulacion):
+    tiempos, U, Np, Pu = simulacion_gillespie(tiempo_simulacion, A, lambda_U, lambda_Np, B)
+    return tiempos, Pu
+
+# ---------- Parámetros ----------
+num_simulaciones = 1000
+t_sim = 30.0            # 30 días
+threshold = 80          # umbral crítico de Pu
+outfile = "Taller 5/2.d.txt"
+
+# ---------- Helper: comprobar si una trayectoria alcanza el umbral ----------
+def alcanza_umbral(metodo, t_sim):
+    tiempos, Pu_vals = metodo(t_sim)
+    if Pu_vals is None or len(Pu_vals) == 0:
+        return False
+    return np.any(np.array(Pu_vals) >= threshold)
+
+# ---------- Determinista (N=1) ----------
+k_det = 1 if alcanza_umbral(simulacion_determinista, t_sim) else 0
+N_det = 1
+p_det = k_det / N_det
+sigma_det = sqrt(p_det * (1 - p_det) / N_det)
+
+# ---------- SDE (Monte Carlo) ----------
+k_sde = 0
+print("Calculando SDE (N = {}) ...".format(num_simulaciones))
+for i in range(num_simulaciones):
+    if alcanza_umbral(simulacion_sde, t_sim):
+        k_sde += 1
+    if (i+1) % 200 == 0:
+        print(f"  SDE: {i+1}/{num_simulaciones} completadas")
+p_sde = k_sde / num_simulaciones
+sigma_sde = sqrt(p_sde * (1 - p_sde) / num_simulaciones)
+
+# ---------- Gillespie (Monte Carlo) ----------
+k_gil = 0
+print("Calculando Gillespie (N = {}) ...".format(num_simulaciones))
+for i in range(num_simulaciones):
+    if alcanza_umbral(simulacion_gillespie_pu, t_sim):
+        k_gil += 1
+    if (i+1) % 200 == 0:
+        print(f"  Gillespie: {i+1}/{num_simulaciones} completadas")
+p_gil = k_gil / num_simulaciones
+sigma_gil = sqrt(p_gil * (1 - p_gil) / num_simulaciones)
+
+# ---------- Construir tabla (Probabilidad en %) ----------
+def ic_pct(p, sigma):
+    low = max(0.0, (p - sigma) * 100.0)
+    high = min(100.0, (p + sigma) * 100.0)
+    return f"[{low:.2f}, {high:.2f}]"
+
+rows = [
+    ["Determinista", f"{p_det*100:.2f}", f"{sigma_det*100:.2f}", ic_pct(p_det, sigma_det)],
+    ["SDE",          f"{p_sde*100:.2f}", f"{sigma_sde*100:.2f}", ic_pct(p_sde, sigma_sde)],
+    ["Gillespie",    f"{p_gil*100:.2f}", f"{sigma_gil*100:.2f}", ic_pct(p_gil, sigma_gil)]
+]
+
+tabla = np.array(rows, dtype=str)
+
+# ---------- Guardar en archivo ----------
+np.savetxt(
+    outfile,
+    tabla,
+    header="Método\tProbabilidad(%)\tIncertidumbre(%)\tIC(p±σ)%",
+    fmt="%s",
+    delimiter="\t",
+    encoding="utf-8"
+)
+
