@@ -73,6 +73,7 @@ for i, iso in enumerate(isotopos):
     else:
         print(f"{iso}: NO alcanza estado estable en 30 días, valor final ≈ {sol.y[i,-1]:.2f}")
 # 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
+
 def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     pasos = int(tiempo/dt)
     t_vals = np.linspace(0, tiempo, pasos)
@@ -112,11 +113,11 @@ def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
         WPu = np.random.normal(0,1)
         SPu = np.random.choice([-1,1])
         K1Pu = dt*muPu + (WPu - SPu)*np.sqrt(dt)*sigmaPu
-        K2Pu = (dt * (lambda_Np * (Np[i-1] + K1Np) - B * (Pu[i-1] + K1Pu)) + (WPu + SPu) * np.sqrt(dt) * np.sqrt(lambda_Np * (Np[i-1] + K1Np) + B * (Pu[i-1] + K1Pu)))
-
+        K2Pu = dt*(lambda_Np * Np[i] - B*(Pu[i-1] + K1Pu)) + (WPu + SPu)*np.sqrt(dt)*np.sqrt(lambda_Np * Np[i] + B*(Pu[i-1] + K1Pu))
         Pu[i] = Pu[i-1] + 0.5*(K1Pu + K2Pu)
 
     return t_vals, U, Np, Pu
+
 
 
 # Graficar 5 trayectorias + determinista en subplots
