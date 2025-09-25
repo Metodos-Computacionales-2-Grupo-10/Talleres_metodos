@@ -193,44 +193,12 @@ plt.title("Algas (Función 1)")
 plt.colorbar()
 plt.xlabel("Condiciones: α=0.00028, β=0.05, F=u-v*u**2, G=10(u-v). Formación ramificada similar a algas", fontsize=7)
 plt.savefig("Taller 4/2_Algas.png")
-a11, dx, dy = 0.005, 0.01, 0.01
-eq11 = pde.PDE(
-    {
-        "u": f"0.0005*laplace(u) + v*u**2 - u + 0.3",
-        "v": f"{dx}d2_dx2(v) + {dy}*d2_dy2(v) - v*u*2 + 3",
-    }
-)
 
-sol11=eq11.solve(state, t_range=20, dt=1e-3)
-a17, dx7, dy7 = 0.005, 0.01, 0.01
-eq17 = pde.PDE(
-    {
-        "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx7}d2_dx2(v) + {dy7}*d2_dy2(v) - v*u*2 + 5",
-    }
-)
-
-sol17=eq17.solve(state, t_range=7, dt=0.5e-3)
-fig3, axes3 = plt.subplots(1, 2, figsize=(10, 5))
-fig3.suptitle("Diferente spatrones con la función 2", fontsize=16)
-
-a3 = axes3[0].contourf(X, Y, (sol11[0].data).T, cmap="berlin", levels=100)
-fig3.colorbar(a3, ax=axes3[0])
-axes3[0].set_title("Piel de pez loro (S=0.3, T=3)")
-
-a32 = axes3[1].contourf(X, Y, (sol17[0].data).T, cmap="berlin", levels=100)
-fig3.colorbar(a32, ax=axes3[1])
-axes3[1].set_title("Estructura de red (S=0.025, T=5, t=7)")
-
-fig3.text(0.5, 0.01, "Condiciones:Ut= 0.0005*∇*2 u+v*u2-u-S, Vt=0.01*d2_dx2(v)+0.01*d2_dy2(v)-v*u*2+T",
-         ha="center", va="bottom", fontsize=12)
-plt.tight_layout(rect=[0, 0.05, 1, 1])
-plt.savefig("Taller 4/2_Pez_loro_y_red.png")
 a18, dx8, dy8 = 0.05, 0.2, 0.2
 eq18 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx8}d2_dx2(v) + {dy8}*d2_dy2(v) - v*u*2 + 5",
+        "v": f"{dx8}*d2_dx2(v) + {dy8}*d2_dy2(v) - v*u*2 + 5",
     }
 )
 
@@ -244,7 +212,7 @@ a12, dx2, dy2 = 0.0005, 0.01, 0.02
 eq12 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx2}d2_dx2(v) + {dy2}*d2_dy2(v) - v*u*2 + 1.55",
+        "v": f"{dx2}*d2_dx2(v) + {dy2}*d2_dy2(v) - v*u*2 + 1.55",
     }
 )
 
@@ -253,7 +221,7 @@ dx3, dy3 = 0.02, 0.02
 eq13 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx3}d2_dx2(v) + {dy3}*d2_dy2(v) - v*u*2 + 1.55",
+        "v": f"{dx3}*d2_dx2(v) + {dy3}*d2_dy2(v) - v*u*2 + 1.55",
     }
 )
 
@@ -262,7 +230,7 @@ dx4, dy4 = 0.02, 0.01
 eq14 = pde.PDE(
     {
         "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
-        "v": f"{dx4}d2_dx2(v) + {dy4}*d2_dy2(v) - v*u*2 + 1.55",
+        "v": f"{dx4}*d2_dx2(v) + {dy4}*d2_dy2(v) - v*u*2 + 1.55",
     }
 )
 
@@ -286,3 +254,38 @@ plt.tight_layout(rect=[0, 0.05, 1, 1])
 fig4.text(0.5, 0.01, "Condiciones:Ut= 0.0005*∇*2 u+v*u2-u-0.025, Vt=dx*d2_dx2(v)+dy*d2_dy2(v)-v*u*2+1.55",
          ha="center", va="bottom", fontsize=12)
 plt.savefig("Taller 4/2_Dependencia_dx_dy.png")
+
+a11, dx, dy = 0.005, 0.01, 0.01
+eq11 = pde.PDE(
+    {
+        "u": f"0.0005*laplace(u) + v*u**2 - u + 0.3",
+        "v": f"{dx}*d2_dx2(v) + {dy}*d2_dy2(v) - v*u*2 + 3",
+    }
+)
+
+sol11=eq11.solve(state, t_range=20, dt=1e-3)
+
+a17, dx7, dy7 = 0.005, 0.01, 0.01
+eq17 = pde.PDE(
+    {
+        "u": f"0.0005*laplace(u) + v*u**2 - u + 0.025",
+        "v": f"{dx7}*d2_dx2(v) + {dy7}*d2_dy2(v) - v*u*2 + 5",
+    }
+)
+
+sol17=eq17.solve(state, t_range=7, dt=0.5e-3)
+fig3, axes3 = plt.subplots(1, 2, figsize=(10, 5))
+fig3.suptitle("Diferente spatrones con la función 2", fontsize=16)
+
+a3 = axes3[0].contourf(X, Y, (sol11[0].data).T, cmap="berlin", levels=100)
+fig3.colorbar(a3, ax=axes3[0])
+axes3[0].set_title("Piel de pez loro (S=0.3, T=3)")
+
+a32 = axes3[1].contourf(X, Y, (sol17[0].data).T, cmap="berlin", levels=100)
+fig3.colorbar(a32, ax=axes3[1])
+axes3[1].set_title("Estructura de red (S=0.025, T=5, t=7)")
+
+fig3.text(0.5, 0.01, "Condiciones:Ut= 0.0005*∇*2 u+v*u2-u-S, Vt=0.01*d2_dx2(v)+0.01*d2_dy2(v)-v*u*2+T",
+         ha="center", va="bottom", fontsize=12)
+plt.tight_layout(rect=[0, 0.05, 1, 1])
+plt.savefig("Taller 4/2_Pez_loro_y_red.png")
