@@ -219,34 +219,45 @@ plt.savefig("Taller 5/2.c.png")
 
 # -------- Parte 2d --------
 
-N = 1000  # Número de simulaciones
 
+N = 1000  # Número de simulaciones
+umbral = 80  # Concentración crítica de Pu
+k = 0       # Contador de trayectorias que alcanzan el umbral
 
 # Simulación de las trayectorias
-trayectorias_pu = []
-
 for i in range(N):
     tiempos, U, Np, Pu = simulacion_gillespie(tiempo_simulacion, A, lambda_U, lambda_Np, B)
-    trayectorias_pu.append(Pu)
+    if np.any(Pu >= umbral):   # Verificar si en algún momento se alcanzó 80
+        k += 1
 
-trayectorias_pu = np.array(trayectorias_pu)
+# Estimación frecuentista
+p = k / N
+sigma_p = np.sqrt(p * (1 - p) / N)  # Desviación estándar (frecuentista)
 
-# Estimación de la probabilidad de alcanzar la concentración crítica
-umbral = 80
-k = np.sum(trayectorias_pu[:, -1] >= umbral)  # Número de trayectorias que alcanzan la concentración crítica
-p = k / N  # Probabilidad
+# Intervalo de confianza (aprox. 95%)
+ci_lower = p - 1.96 * sigma_p
+ci_upper = p + 1.96 * sigma_p
 
-# Estimación de la incertidumbre (frecuentista)
-sigma_p = np.sqrt(p * (1 - p) / N)
-
-# Aproximación Bayesiana
+# Aproximación Bayesiana con prior uniforme
 alpha = 1 + k
 beta = 1 + N - k
-probabilidad_bayesiana = (alpha - 1) / (alpha + beta - 2)
+# Media de la distribución Beta posterior
+probabilidad_bayesiana = alpha / (alpha + beta)
+# Intervalo de credibilidad 95%
+from scipy.stats import beta as beta_dist
+ci_bayes = beta_dist.ppf([0.025, 0.975], alpha, beta)
 
-probabilidad_txt = f"Frecuentista: p = {p:.4f} ± {sigma_p:.4f}\nBayesiana: p = {probabilidad_bayesiana:.4f}\n"
+# Construimos tabla para guardar
+tabla = np.array([
+    ["Frecuentista", f"{p*100:.2f}", f"{sigma_p*100:.2f}", f"[{ci_lower*100:.2f}, {ci_upper*100:.2f}]"],
+    ["Bayesiana", f"{probabilidad_bayesiana*100:.2f}", "-", f"[{ci_bayes[0]*100:.2f}, {ci_bayes[1]*100:.2f}]"]
+])
 
-# Guardamos los resultados en un archivo de texto
-f = open("Taller 5/2.d.txt", "w")
-f.write(probabilidad_txt)
-f.close()
+# Guardar en archivo con formato tabular
+np.savetxt(
+    "Taller 5/2.d.txt",
+    tabla,
+    header="Método\tProbabilidad(%)\tIncertidumbre(%)\tIC95%",
+    fmt="%s",
+    delimiter="\t"
+)
