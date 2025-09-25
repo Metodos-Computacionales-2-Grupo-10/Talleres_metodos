@@ -73,6 +73,7 @@ for i, iso in enumerate(isotopos):
     else:
         print(f"{iso}: NO alcanza estado estable en 30 días, valor final ≈ {sol.y[i,-1]:.2f}")
 # 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
+# 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
 
 def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     pasos = int(tiempo/dt)
@@ -234,84 +235,3 @@ plt.savefig("Taller 5/2.c.png")
 
 
 # -------- Parte 2d --------
-
-import numpy as np
-
-# --- Parámetros ---
-num_simulaciones = 1000
-num_dias = 30
-umbral = 80  # Concentración crítica de Pu
-
-# Función para contar los días que superan el umbral
-def contar_dias_supera(tiempos, valores, umbral=80, num_dias=30):
-    contador = 0
-    for dia in range(1, num_dias + 1):
-        mask = tiempos <= dia
-        if np.any(mask):
-            pu_dia = valores[mask][-1]
-            if pu_dia >= umbral:
-                contador += 1
-    return contador / num_dias
-
-# --- Funciones de simulación ---
-# Función para simulación determinista
-def simulacion_determinista(tiempo_simulacion, U0=10, Np0=10, Pu0=10):
-    sol = solve_ivp(
-        ecuaciones_diferenciales,
-        [0, tiempo_simulacion],
-        [U0, Np0, Pu0],
-        t_eval=np.linspace(0, tiempo_simulacion, 300)
-    )
-    return sol.t, sol.y[2]  # Devuelve tiempo y valores de Pu
-
-# Función para simulación estocástica
-def simulacion_sde(tiempo_simulacion, U0=10, Np0=10, Pu0=10):
-    t_vals, U, Np, Pu = sde_rk2(A, B, lambda_U, lambda_Np, tiempo_simulacion,
-                                 U0=U0, Np0=Np0, Pu0=Pu0)
-    return t_vals, Pu
-
-# Función para simulación de Gillespie
-def simulacion_gillespie_pu(tiempo_simulacion, U0=10, Np0=10, Pu0=10):
-    tiempos, U, Np, Pu = simulacion_gillespie(tiempo_simulacion, A, lambda_U, lambda_Np, B,
-                                               U0=U0, Np0=Np0, Pu0=Pu0)
-    return tiempos, Pu
-
-# --- Función general para estimar probabilidades ---
-def estimar_probabilidad(metodo_simulacion, nombre):
-    conteos = []
-    for _ in range(num_simulaciones):
-        tiempos, valores_pu = metodo_simulacion(30)  # Simulamos 30 días
-        conteos.append(contar_dias_supera(tiempos, valores_pu, umbral, num_dias))
-   
-    conteos = np.array(conteos)
-    p_hat = np.mean(conteos)  # Probabilidad media
-    N = len(conteos)
-   
-    # Incertidumbre estándar
-    sigma = np.sqrt(p_hat * (1 - p_hat) / N)
-   
-    # IC 95% (en porcentaje)
-    p_hat_pct = p_hat * 100
-    sigma_pct = sigma * 100
-    IC = [p_hat_pct - sigma_pct, p_hat_pct + sigma_pct]
-   
-    return [nombre, f"{p_hat_pct:.2f}", f"{sigma_pct:.2f}", f"[{IC[0]:.2f}, {IC[1]:.2f}]"]
-
-# --- Estimar probabilidades con los tres métodos ---
-resultados = []
-resultados.append(estimar_probabilidad(simulacion_determinista, "Determinista"))
-resultados.append(estimar_probabilidad(simulacion_sde, "SDE"))
-resultados.append(estimar_probabilidad(simulacion_gillespie_pu, "Gillespie"))
-
-# Convertir a array para guardado
-tabla = np.array(resultados, dtype=object)
-
-# --- Guardado en txt ---
-np.savetxt(
-    "Taller5_probabilidades.txt",
-    tabla,
-    header="Método\tProbabilidad(%)\tIncertidumbre(%)\tIC95%",
-    fmt="%s",
-    delimiter="\t",
-    encoding="utf-8"
-)

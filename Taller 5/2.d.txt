@@ -1,3 +1,10 @@
+<<<<<<< HEAD
 # M�todo	Probabilidad(%)	Incertidumbre(%)	IC95%
 Frecuentista	18.40	1.23	[16.00, 20.80]
 Bayesiana	18.46	-	[16.12, 20.92]
+=======
+# Método	Probabilidad(%)	Incertidumbre(%)	IC(p±σ)%
+Determinista	0.00	0.00	[0.00, 0.00]
+SDE	0.00	0.00	[0.00, 0.00]
+Gillespie	19.00	1.24	[17.76, 20.24]
+>>>>>>> 8d64b24932e5db3bd9bb2fbb328fb2d603d72a24
