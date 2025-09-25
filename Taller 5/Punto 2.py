@@ -73,7 +73,6 @@ for i, iso in enumerate(isotopos):
     else:
         print(f"{iso}: NO alcanza estado estable en 30 días, valor final ≈ {sol.y[i,-1]:.2f}")
 # 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
-
 def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     pasos = int(tiempo/dt)
     t_vals = np.linspace(0, tiempo, pasos)
@@ -83,23 +82,39 @@ def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     U[0], Np[0], Pu[0] = U0, Np0, Pu0
 
     for i in range(1, pasos):
-        # ---- Evolución de U con ruido estocástico ----
+        # ==========================
+        # Ruido en U
+        # ==========================
         muU = A - lambda_U * U[i-1]
         sigmaU = np.sqrt(A + lambda_U * U[i-1])
-        W = np.random.normal(0,1)
-        S = np.random.choice([-1,1])
+        WU = np.random.normal(0,1)
+        SU = np.random.choice([-1,1])
+        K1U = dt*muU + (WU - SU)*np.sqrt(dt)*sigmaU
+        K2U = dt*(A - lambda_U*(U[i-1] + K1U)) + (WU + SU)*np.sqrt(dt)*np.sqrt(A + lambda_U*(U[i-1] + K1U))
+        U[i] = U[i-1] + 0.5*(K1U + K2U)
 
-        K1 = dt*muU + (W+S)*np.sqrt(dt)*sigmaU
-        K2 = dt*(A - lambda_U*(U[i-1]+K1)) + (W+S)*np.sqrt(dt)*np.sqrt(A + lambda_U*(U[i-1]+K1))
+        # ==========================
+        # Ruido en Np
+        # ==========================
+        muNp = lambda_U * U[i] - lambda_Np * Np[i-1]
+        sigmaNp = np.sqrt(lambda_U * U[i] + lambda_Np * Np[i-1])
+        WNp = np.random.normal(0,1)
+        SNp = np.random.choice([-1,1])
+        K1Np = dt*muNp + (WNp - SNp)*np.sqrt(dt)*sigmaNp
+        K2Np = dt*(lambda_U * U[i] - lambda_Np*(Np[i-1] + K1Np)) + (WNp + SNp)*np.sqrt(dt)*np.sqrt(lambda_U * U[i] + lambda_Np*(Np[i-1] + K1Np))
+        Np[i] = Np[i-1] + 0.5*(K1Np + K2Np)
 
-        U[i] = U[i-1] + 0.5*(K1+K2)
+        # ==========================
+        # Ruido en Pu
+        # ==========================
+        muPu = lambda_Np * Np[i] - B * Pu[i-1]
+        sigmaPu = np.sqrt(lambda_Np * Np[i] + B * Pu[i-1])
+        WPu = np.random.normal(0,1)
+        SPu = np.random.choice([-1,1])
+        K1Pu = dt*muPu + (WPu - SPu)*np.sqrt(dt)*sigmaPu
+        K2Pu = (dt * (lambda_Np * (Np[i-1] + K1Np) - B * (Pu[i-1] + K1Pu)) + (WPu + SPu) * np.sqrt(dt) * np.sqrt(lambda_Np * (Np[i-1] + K1Np) + B * (Pu[i-1] + K1Pu)))
 
-        # ---- Determinista para Np y Pu ----
-        dNp = (lambda_U * U[i-1] - lambda_Np * Np[i-1]) * dt
-        dPu = (lambda_Np * Np[i-1] - B * Pu[i-1]) * dt
-
-        Np[i] = Np[i-1] + dNp
-        Pu[i] = Pu[i-1] + dPu
+        Pu[i] = Pu[i-1] + 0.5*(K1Pu + K2Pu)
 
     return t_vals, U, Np, Pu
 
@@ -238,7 +253,7 @@ plt.savefig("Taller 5/2.c.png")
 import numpy as np
 from math import sqrt
 
-# ---------- Wrappers de simulación ----------
+# ---------- Resultados simulación ----------
 def simulacion_determinista(tiempo_simulacion):
     sol = solve_ivp(ecuaciones_diferenciales, [0, tiempo_simulacion],
                     [U0, Np0, Pu0],

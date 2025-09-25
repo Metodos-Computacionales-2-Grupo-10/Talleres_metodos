@@ -1,4 +1,4 @@
 # Método	Probabilidad(%)	Incertidumbre(%)	IC(p±σ)%
 Determinista	0.00	0.00	[0.00, 0.00]
-SDE	0.00	0.00	[0.00, 0.00]
-Gillespie	20.20	1.27	[18.93, 21.47]
+SDE	5.70	0.73	[4.97, 6.43]
+Gillespie	18.30	1.22	[17.08, 19.52]
