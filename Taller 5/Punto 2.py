@@ -63,7 +63,7 @@ for i in range(len(sol.t)):          # recorremos cada tiempo
 
 # Convertimos la lista a un arreglo numpy (para facilidad)
 derivs = np.array(derivs)
-print(derivs.shape)
+#print(derivs.shape)
 # Evaluación de cada isótopo
 isotopos = ["U (Uranio-239)", "Np (Neptunio-239)", "Pu (Plutonio-239)"]
 for i, iso in enumerate(isotopos):
