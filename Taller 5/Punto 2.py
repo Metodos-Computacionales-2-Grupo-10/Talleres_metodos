@@ -72,7 +72,7 @@ for i, iso in enumerate(isotopos):
         print(f"{iso}: Llega a estado estable en t ≈ {t_est:.3f} días, valor ≈ {sol.y[i,-1]:.2f}")
     else:
         print(f"{iso}: NO alcanza estado estable en 30 días, valor final ≈ {sol.y[i,-1]:.2f}")
-###2.b
+# 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
 
 def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     pasos = int(tiempo/dt)
@@ -104,26 +104,42 @@ def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     return t_vals, U, Np, Pu
 
 
-# Graficar 5 trayectorias bajo la solución determinista
-tiempo = 30
+# Graficar 5 trayectorias + determinista en subplots
 num_trayectorias = 5
+fig, axes = plt.subplots(3, 1, figsize=(10,12), sharex=True)
 
-plt.figure(figsize=(10,6))
-# Solución determinista (ya calculada en sol de 2a)
-plt.plot(sol.t, sol.y[2], "k--", label="Determinista Pu")
+# Nombres de isótopos
+isotopos = ["Uranio-239 (U)", "Neptunio-239 (Np)", "Plutonio-239 (Pu)"]
 
+# Guardamos trayectorias estocásticas
+datos = []
 for i in range(num_trayectorias):
     t_vals, U_vals, Np_vals, Pu_vals = sde_rk2(A, B, lambda_U, lambda_Np, tiempo)
-    plt.plot(t_vals, Pu_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+    datos.append((t_vals, U_vals, Np_vals, Pu_vals))
 
-plt.xlabel("Tiempo (días)")
-plt.ylabel("Cantidad de Pu")
-plt.title("Evolución estocástica de Pu vs determinista")
-plt.legend()
-plt.grid()
+# Dibujar en subplots
+for idx, (ax, iso) in enumerate(zip(axes, isotopos)):
+    # Solución determinista ya calculada en 2a
+    ax.plot(sol.t, sol.y[idx], "k--", label="Determinista")
+    
+    # Trayectorias estocásticas
+    for i, (t_vals, U_vals, Np_vals, Pu_vals) in enumerate(datos):
+        if idx == 0:
+            ax.plot(t_vals, U_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+        elif idx == 1:
+            ax.plot(t_vals, Np_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+        else:
+            ax.plot(t_vals, Pu_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+    
+    ax.set_ylabel("Cantidad")
+    ax.set_title(iso)
+    ax.grid(True)
+    if idx == 2:
+        ax.set_xlabel("Tiempo (días)")
+    ax.legend()
+
+plt.tight_layout()
 plt.savefig("Taller 5/2.b.png")
-
-
 #Punto 2c.
 import random
 R = np.array([
@@ -231,7 +247,7 @@ for i in range(N):
         k += 1
 
 # Estimación frecuentista
-p = k / N
+p = k / N 
 sigma_p = np.sqrt(p * (1 - p) / N)  # Desviación estándar (frecuentista)
 
 # Intervalo de confianza (aprox. 95%)
