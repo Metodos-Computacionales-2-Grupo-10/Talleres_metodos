@@ -63,7 +63,6 @@ plt.legend()
 plt.grid(alpha=0.3)
 
 plt.savefig("Taller 5/1a.pdf")
-plt.show()
 
 #1.b
 def recorrer_betas(betas_max=1.0, L=50, _equil=200,_meas=500, n_points=10, J=1.0, h=0.0):
@@ -94,13 +93,13 @@ def recorrer_betas(betas_max=1.0, L=50, _equil=200,_meas=500, n_points=10, J=1.0
         
         E_mean = np.mean(energies)
         E2_mean = np.mean(np.array(energies)**2)
-        Cv = (beta**2) * (L**2) * (E2_mean - E_mean*2)
+        Cv = (beta**2) * (L**2) * (E2_mean - E_mean**2)
         Cvs.append(Cv)
 
     return betas_array, np.array(Cvs)
 
+betas_array, Cvs = recorrer_betas(betas_max=1.0, L=50, _equil=250, _meas=1000, n_points=20)
 
-betas_array, Cvs = recorrer_betas(betas_max=1.0, L=25, _equil=30, _meas=200, n_points=10)
 
 plt.plot(betas_array, Cvs, '-o')
 plt.axvline(0.5*np.log(1+np.sqrt(2)), color='k', linestyle='--', label=r'$\beta_c$ de Onsager')
