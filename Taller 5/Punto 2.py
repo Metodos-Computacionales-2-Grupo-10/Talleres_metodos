@@ -63,7 +63,7 @@ for i in range(len(sol.t)):          # recorremos cada tiempo
 
 # Convertimos la lista a un arreglo numpy (para facilidad)
 derivs = np.array(derivs)
-
+#print(derivs.shape)
 # Evaluación de cada isótopo
 isotopos = ["U (Uranio-239)", "Np (Neptunio-239)", "Pu (Plutonio-239)"]
 for i, iso in enumerate(isotopos):
@@ -234,46 +234,3 @@ plt.savefig("Taller 5/2.c.png")
 
 
 # -------- Parte 2d --------
-
-
-N = 1000  # Número de simulaciones
-umbral = 80  # Concentración crítica de Pu
-k = 0       # Contador de trayectorias que alcanzan el umbral
-
-# Simulación de las trayectorias
-for i in range(N):
-    tiempos, U, Np, Pu = simulacion_gillespie(tiempo_simulacion, A, lambda_U, lambda_Np, B)
-    if np.any(Pu >= umbral):   # Verificar si en algún momento se alcanzó 80
-        k += 1
-
-# Estimación frecuentista
-p = k / N 
-sigma_p = np.sqrt(p * (1 - p) / N)  # Desviación estándar (frecuentista)
-
-# Intervalo de confianza (aprox. 95%)
-ci_lower = p - 1.96 * sigma_p
-ci_upper = p + 1.96 * sigma_p
-
-# Aproximación Bayesiana con prior uniforme
-alpha = 1 + k
-beta = 1 + N - k
-# Media de la distribución Beta posterior
-probabilidad_bayesiana = alpha / (alpha + beta)
-# Intervalo de credibilidad 95%
-from scipy.stats import beta as beta_dist
-ci_bayes = beta_dist.ppf([0.025, 0.975], alpha, beta)
-
-# Construimos tabla para guardar
-tabla = np.array([
-    ["Frecuentista", f"{p*100:.2f}", f"{sigma_p*100:.2f}", f"[{ci_lower*100:.2f}, {ci_upper*100:.2f}]"],
-    ["Bayesiana", f"{probabilidad_bayesiana*100:.2f}", "-", f"[{ci_bayes[0]*100:.2f}, {ci_bayes[1]*100:.2f}]"]
-])
-
-# Guardar en archivo con formato tabular
-np.savetxt(
-    "Taller 5/2.d.txt",
-    tabla,
-    header="Método\tProbabilidad(%)\tIncertidumbre(%)\tIC95%",
-    fmt="%s",
-    delimiter="\t"
-)

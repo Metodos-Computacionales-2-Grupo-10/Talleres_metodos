@@ -1,0 +1,4 @@
+# Método	Probabilidad(%)	Incertidumbre(%)	IC95%
+Determinista	0.00	0.00	[0.00, 0.00]
+SDE	0.00	0.00	[0.00, 0.00]
+Gillespie	0.01	0.04	[-0.02, 0.05]
