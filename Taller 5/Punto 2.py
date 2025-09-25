@@ -73,7 +73,6 @@ for i, iso in enumerate(isotopos):
     else:
         print(f"{iso}: NO alcanza estado estable en 30 días, valor final ≈ {sol.y[i,-1]:.2f}")
 # 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
-# 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
 
 def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     pasos = int(tiempo/dt)
