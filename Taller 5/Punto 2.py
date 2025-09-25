@@ -63,7 +63,7 @@ for i in range(len(sol.t)):          # recorremos cada tiempo
 
 # Convertimos la lista a un arreglo numpy (para facilidad)
 derivs = np.array(derivs)
-
+print(derivs.shape)
 # Evaluación de cada isótopo
 isotopos = ["U (Uranio-239)", "Np (Neptunio-239)", "Pu (Plutonio-239)"]
 for i, iso in enumerate(isotopos):
@@ -72,7 +72,7 @@ for i, iso in enumerate(isotopos):
         print(f"{iso}: Llega a estado estable en t ≈ {t_est:.3f} días, valor ≈ {sol.y[i,-1]:.2f}")
     else:
         print(f"{iso}: NO alcanza estado estable en 30 días, valor final ≈ {sol.y[i,-1]:.2f}")
-###2.b
+# 2b. Ecuación diferencial estocástica (Runge-Kutta estocástico de orden 2)
 
 def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     pasos = int(tiempo/dt)
@@ -104,26 +104,42 @@ def sde_rk2(A, B, lambda_U, lambda_Np, tiempo, dt=0.01, U0=10, Np0=10, Pu0=10):
     return t_vals, U, Np, Pu
 
 
-# Graficar 5 trayectorias bajo la solución determinista
-tiempo = 30
+# Graficar 5 trayectorias + determinista en subplots
 num_trayectorias = 5
+fig, axes = plt.subplots(3, 1, figsize=(10,12), sharex=True)
 
-plt.figure(figsize=(10,6))
-# Solución determinista (ya calculada en sol de 2a)
-plt.plot(sol.t, sol.y[2], "k--", label="Determinista Pu")
+# Nombres de isótopos
+isotopos = ["Uranio-239 (U)", "Neptunio-239 (Np)", "Plutonio-239 (Pu)"]
 
+# Guardamos trayectorias estocásticas
+datos = []
 for i in range(num_trayectorias):
     t_vals, U_vals, Np_vals, Pu_vals = sde_rk2(A, B, lambda_U, lambda_Np, tiempo)
-    plt.plot(t_vals, Pu_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+    datos.append((t_vals, U_vals, Np_vals, Pu_vals))
 
-plt.xlabel("Tiempo (días)")
-plt.ylabel("Cantidad de Pu")
-plt.title("Evolución estocástica de Pu vs determinista")
-plt.legend()
-plt.grid()
+# Dibujar en subplots
+for idx, (ax, iso) in enumerate(zip(axes, isotopos)):
+    # Solución determinista ya calculada en 2a
+    ax.plot(sol.t, sol.y[idx], "k--", label="Determinista")
+    
+    # Trayectorias estocásticas
+    for i, (t_vals, U_vals, Np_vals, Pu_vals) in enumerate(datos):
+        if idx == 0:
+            ax.plot(t_vals, U_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+        elif idx == 1:
+            ax.plot(t_vals, Np_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+        else:
+            ax.plot(t_vals, Pu_vals, alpha=0.7, label=f"Trayectoria {i+1}")
+    
+    ax.set_ylabel("Cantidad")
+    ax.set_title(iso)
+    ax.grid(True)
+    if idx == 2:
+        ax.set_xlabel("Tiempo (días)")
+    ax.legend()
+
+plt.tight_layout()
 plt.savefig("Taller 5/2.b.png")
-
-
 #Punto 2c.
 import random
 R = np.array([
@@ -219,45 +235,83 @@ plt.savefig("Taller 5/2.c.png")
 
 # -------- Parte 2d --------
 
+import numpy as np
 
-N = 1000  # Número de simulaciones
+# --- Parámetros ---
+num_simulaciones = 1000
+num_dias = 30
 umbral = 80  # Concentración crítica de Pu
-k = 0       # Contador de trayectorias que alcanzan el umbral
 
-# Simulación de las trayectorias
-for i in range(N):
-    tiempos, U, Np, Pu = simulacion_gillespie(tiempo_simulacion, A, lambda_U, lambda_Np, B)
-    if np.any(Pu >= umbral):   # Verificar si en algún momento se alcanzó 80
-        k += 1
+# Función para contar los días que superan el umbral
+def contar_dias_supera(tiempos, valores, umbral=80, num_dias=30):
+    contador = 0
+    for dia in range(1, num_dias + 1):
+        mask = tiempos <= dia
+        if np.any(mask):
+            pu_dia = valores[mask][-1]
+            if pu_dia >= umbral:
+                contador += 1
+    return contador / num_dias
 
-# Estimación frecuentista
-p = k / N
-sigma_p = np.sqrt(p * (1 - p) / N)  # Desviación estándar (frecuentista)
+# --- Funciones de simulación ---
+# Función para simulación determinista
+def simulacion_determinista(tiempo_simulacion, U0=10, Np0=10, Pu0=10):
+    sol = solve_ivp(
+        ecuaciones_diferenciales,
+        [0, tiempo_simulacion],
+        [U0, Np0, Pu0],
+        t_eval=np.linspace(0, tiempo_simulacion, 300)
+    )
+    return sol.t, sol.y[2]  # Devuelve tiempo y valores de Pu
 
-# Intervalo de confianza (aprox. 95%)
-ci_lower = p - 1.96 * sigma_p
-ci_upper = p + 1.96 * sigma_p
+# Función para simulación estocástica
+def simulacion_sde(tiempo_simulacion, U0=10, Np0=10, Pu0=10):
+    t_vals, U, Np, Pu = sde_rk2(A, B, lambda_U, lambda_Np, tiempo_simulacion,
+                                 U0=U0, Np0=Np0, Pu0=Pu0)
+    return t_vals, Pu
 
-# Aproximación Bayesiana con prior uniforme
-alpha = 1 + k
-beta = 1 + N - k
-# Media de la distribución Beta posterior
-probabilidad_bayesiana = alpha / (alpha + beta)
-# Intervalo de credibilidad 95%
-from scipy.stats import beta as beta_dist
-ci_bayes = beta_dist.ppf([0.025, 0.975], alpha, beta)
+# Función para simulación de Gillespie
+def simulacion_gillespie_pu(tiempo_simulacion, U0=10, Np0=10, Pu0=10):
+    tiempos, U, Np, Pu = simulacion_gillespie(tiempo_simulacion, A, lambda_U, lambda_Np, B,
+                                               U0=U0, Np0=Np0, Pu0=Pu0)
+    return tiempos, Pu
 
-# Construimos tabla para guardar
-tabla = np.array([
-    ["Frecuentista", f"{p*100:.2f}", f"{sigma_p*100:.2f}", f"[{ci_lower*100:.2f}, {ci_upper*100:.2f}]"],
-    ["Bayesiana", f"{probabilidad_bayesiana*100:.2f}", "-", f"[{ci_bayes[0]*100:.2f}, {ci_bayes[1]*100:.2f}]"]
-])
+# --- Función general para estimar probabilidades ---
+def estimar_probabilidad(metodo_simulacion, nombre):
+    conteos = []
+    for _ in range(num_simulaciones):
+        tiempos, valores_pu = metodo_simulacion(30)  # Simulamos 30 días
+        conteos.append(contar_dias_supera(tiempos, valores_pu, umbral, num_dias))
+   
+    conteos = np.array(conteos)
+    p_hat = np.mean(conteos)  # Probabilidad media
+    N = len(conteos)
+   
+    # Incertidumbre estándar
+    sigma = np.sqrt(p_hat * (1 - p_hat) / N)
+   
+    # IC 95% (en porcentaje)
+    p_hat_pct = p_hat * 100
+    sigma_pct = sigma * 100
+    IC = [p_hat_pct - sigma_pct, p_hat_pct + sigma_pct]
+   
+    return [nombre, f"{p_hat_pct:.2f}", f"{sigma_pct:.2f}", f"[{IC[0]:.2f}, {IC[1]:.2f}]"]
 
-# Guardar en archivo con formato tabular
+# --- Estimar probabilidades con los tres métodos ---
+resultados = []
+resultados.append(estimar_probabilidad(simulacion_determinista, "Determinista"))
+resultados.append(estimar_probabilidad(simulacion_sde, "SDE"))
+resultados.append(estimar_probabilidad(simulacion_gillespie_pu, "Gillespie"))
+
+# Convertir a array para guardado
+tabla = np.array(resultados, dtype=object)
+
+# --- Guardado en txt ---
 np.savetxt(
-    "Taller 5/2.d.txt",
+    "Taller5_probabilidades.txt",
     tabla,
     header="Método\tProbabilidad(%)\tIncertidumbre(%)\tIC95%",
     fmt="%s",
-    delimiter="\t"
+    delimiter="\t",
+    encoding="utf-8"
 )
